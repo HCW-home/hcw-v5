@@ -1,0 +1,46 @@
+table {
+  width: 100%;
+}
+
+.mat-column-actions {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.field-container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.status-box {
+  color: white;
+  padding: 10px 15px;
+  margin: 5px;
+  border-radius: 8px;
+  font-weight: bold;
+  width: fit-content;
+  text-align: center;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-draft {
+  background-color: #d3d3d3;
+}
+
+.status-received {
+  background-color: #87ceeb;
+}
+
+.status-pending {
+  background-color: #ffcc66;
+}
+
+.status-approved {
+  color: green;
+  background-color: #E8F5E9;
+}
+
+.status-rejected {
+  background-color: #f08080;
+}

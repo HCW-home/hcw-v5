@@ -1,0 +1,80 @@
+@import "../variables.scss";
+
+.container {
+  height: 100%;
+  width:100%;
+}
+
+.sidenav{
+  z-index: 1 !important;
+  width: 100px;
+}
+
+.at{
+  margin: 16px;
+  font-size: 30px;
+  text-align: center;
+  color: $primary-color;
+  font-weight: 500;
+}
+.at> span{
+  display: block;
+  font-size: 12px;
+}
+
+.menu-list{
+  margin-top: 80px;
+}
+
+
+.menu-btn {
+  gap: 4px;
+  display: flex;
+  padding: 25px;
+  text-align: center;
+  align-items: center;
+  text-decoration: none;
+  flex-direction: column;
+  vertical-align: middle;
+  justify-content: center;
+  color: var(--app-black);
+  height: auto !important;
+  cursor: pointer !important;
+
+  .btn-text {
+    margin: auto;
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  &:hover {
+    background-color: $primary-color;
+    .btn-text, mat-icon {
+      color: #ffffff;
+    }
+  }
+}
+
+
+.active {
+  background-color: $primary-color;
+  .btn-text, mat-icon {
+    color: #ffffff;
+  }
+}
+
+
+.menu-btn:hover{
+ background-color: $primary-color;
+ color: #ffffff;
+}
+
+.header {
+  border-bottom: 1px solid rgb(209, 209, 209);
+  margin:10px 0 10px 0;
+}
+

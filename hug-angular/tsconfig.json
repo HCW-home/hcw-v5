@@ -1,0 +1,37 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist/out-tsc",
+    "sourceMap": true,
+    "declaration": false,
+    "experimentalDecorators": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "importHelpers": true,
+    "target": "ES2022",
+    "lib": [
+      "ES2021",
+      "dom",
+      "dom.iterable"
+    ],
+    "paths": {
+      "hcw-stream": [
+        "dist/hcw-stream/hcw-stream",
+        "dist/hcw-stream"
+      ],
+      "hcw-stream-lib": [
+        "dist/hcw-stream-lib/hcw-stream-lib",
+        "dist/hcw-stream-lib"
+      ]
+    },
+    "esModuleInterop": true,
+    "useDefineForClassFields": false
+  },
+  "angularCompilerOptions": {
+    "fullTemplateTypeCheck": true,
+    "strictInjectionParameters": true,
+    "allowedNonPeerDependencies": true,
+    "enableIvy": true
+  }
+}

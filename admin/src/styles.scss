@@ -1,0 +1,116 @@
+@use '@angular/material' as mat;
+
+@import "assets/fonts/fonts";
+@import '@angular/material/theming';
+@include mat.core();
+
+$my-primary: mat.define-palette(mat.$indigo-palette, 500);
+$my-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+
+$my-theme: mat.define-light-theme((
+  color: (
+    primary: $my-primary,
+    accent: $my-accent,
+  ),
+  typography: mat.define-typography-config(),
+  density: 0,
+));
+
+@include mat.all-component-themes($my-theme);
+
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+
+.mat-list-item-content {
+  padding: 0px !important;
+}
+
+.mat-badge-after .mat-badge-content {
+  z-index: 20;
+  right: -24px !important;
+  top: -12px !important;
+}
+
+
+#mat-dialog-title-0 {
+  display: none !important;
+}
+
+.mat-form-field-label {
+  left: 41% !important;
+  color: #ffffff !important;
+}
+
+img {
+  image-orientation: from-image;
+}
+.pagination-control {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  margin-top: 30px;
+  margin-bottom: 20px;
+}
+
+.list-card {
+  margin-bottom: 28px;
+}
+
+.content {
+  margin-top: 120px;
+  margin-left: 80px;
+  margin-right: 80px;
+}
+
+mat-label{
+  color:#333;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.justify-content-end {
+  justify-content: flex-end;
+}
+
+.justify-content-between {
+  justify-content: space-between;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.gap-16 {
+  gap: 16px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.mr-16 {
+  margin-right: 16px;
+}
+
+.w-100 {
+ width: 100%;
+}
+
+.align-items-center {
+  align-items: center;
+}
+
+.align-self-start {
+  align-self: flex-start;
+}
