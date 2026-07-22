@@ -12,7 +12,7 @@ show:
 	@ echo yarn_version: $(yarn_version)
 
 node_modules:
-	@ npx yarn install
+	@ npx yarn install --cache-folder .yarn-cache
 	@# npm install
 
 build: node_modules

@@ -7,7 +7,7 @@ VERSION ?= $(shell head -n 1 debian/changelog| cut -d' ' -f2 | sed 's/[\(\)]*//g
 .PHONY: install build archive test clean web
 
 node_modules:
-	@ npx yarn install
+	@ npx yarn install --cache-folder .yarn-cache
 	@# npm install
 
 build: web

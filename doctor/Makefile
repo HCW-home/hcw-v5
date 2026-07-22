@@ -7,7 +7,7 @@ timeStamp:=$(shell date +%Y%m%d%H%M%S)
 .PHONY: install build archive test clean
 
 node_modules:
-	@ npx yarn install
+	@ npx yarn install --cache-folder .yarn-cache
 
 build: node_modules
 #	@ npx ng build --configuration=production --build-optimizer --aot --output-hashing=all --vendor-chunk

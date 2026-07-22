@@ -5,7 +5,7 @@ COMPONENT := backend
 .PHONY: install build archive test clean do-release
 
 node_modules:
-	@ npx yarn install
+	@ npx yarn install --cache-folder .yarn-cache
 
 build: node_modules
 
