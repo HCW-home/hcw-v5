@@ -1,0 +1,8 @@
+usr/share/hcw-athome/backend
+usr/bin/hcw
+lib/systemd/system/hcw-athome.service
+etc/hcw-athome/hcw-athome.conf
+etc/hcw-athome/saml.key
+etc/hcw-athome/nginx-common
+etc/hcw-athome/nginx-proxy
+usr/share/doc/hcw-athome-backend/nginx-samples

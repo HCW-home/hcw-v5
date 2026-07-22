@@ -1,11 +1,11 @@
-FROM node:20-alpine AS builder
+FROM node:22 AS builder
 ENV VERSION=5.3.29
 WORKDIR /usr/src/app
 COPY package*.json ./
 COPY yarn.lock ./
 RUN npx yarn install
 COPY . .
-RUN apk add --no-cache make
+# node:22 (Debian) already ships make, no need for `apk add`
 RUN make
 
 FROM docker.io/nginxinc/nginx-unprivileged:1.28-bookworm

@@ -1,0 +1,85 @@
+services:
+
+  backend:
+    build:
+      context: backend
+    image: docker.io/iabsis/hcw-backend:${TAG:-latest}
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DB_URI=mongodb://mongo:27017/hcw-athome
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "1337:1337"
+
+  admin:
+    build:
+      context: admin
+    image: docker.io/iabsis/hcw-admin:${TAG:-latest}
+    restart: always
+    environment:
+      - BACKEND_URL=http://backend:1337
+    depends_on:
+      - backend
+    ports:
+      - "8082:8082"
+
+  doctor:
+    build:
+      context: doctor
+    image: docker.io/iabsis/hcw-doctor:${TAG:-latest}
+    restart: always
+    environment:
+      - BACKEND_URL=http://backend:1337
+    depends_on:
+      - backend
+    ports:
+      - "8081:8081"
+      - "4081:4081"
+
+  patient:
+    build:
+      context: patient
+    image: docker.io/iabsis/hcw-patient:${TAG:-latest}
+    restart: always
+    environment:
+      - BACKEND_URL=http://backend:1337
+    depends_on:
+      - backend
+    ports:
+      - "8080:8080"
+      - "4080:4080"
+
+  mongo:
+    image: docker.io/mongo:7
+    restart: always
+    volumes:
+      - ./data/mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: docker.io/redis:7
+    restart: always
+    volumes:
+      - ./data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # clamav is optional: the backend can scan uploads via ClamAV
+  # (see CLAM_SOCKET in backend/.env.dist). Uncomment to enable.
+  # clamav:
+  #   image: docker.io/clamav/clamav:latest
+  #   restart: always
+  #   volumes:
+  #     - ./data/clamav:/var/lib/clamav

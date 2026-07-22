@@ -1,0 +1,43 @@
+Source: hcw-athome
+Section: web
+Priority: optional
+Maintainer: Olivier Bitsch <olivier.b@iabsis.com>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 12),
+ nodejs (>= 22),
+ nodejs (<< 24),
+ npm,
+Standards-Version: 4.5.1
+
+Package: hcw-athome-backend
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+ nodejs (>= 22),
+ nodejs (<< 24),
+Description: HCW@Home - Backend (Sails.js/Node)
+ Backend API and realtime server for the HCW@Home teleconsultation platform.
+
+Package: hcw-athome-admin
+Architecture: any
+Depends:
+ ${misc:Depends},
+Description: HCW@Home - Administration interface (Angular)
+ Administration web interface for the HCW@Home teleconsultation platform.
+
+Package: hcw-athome-caregiver
+Architecture: any
+Depends:
+ ${misc:Depends},
+Description: HCW@Home - Caregiver interface (Angular)
+ Practitioner (caregiver) web interface for the HCW@Home teleconsultation
+ platform.
+
+Package: hcw-athome-patient
+Architecture: any
+Depends:
+ ${misc:Depends},
+Description: HCW@Home - Patient interface (Ionic/Angular)
+ Patient web interface for the HCW@Home teleconsultation platform.

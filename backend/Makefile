@@ -10,6 +10,18 @@ node_modules:
 build: node_modules
 
 install: build
+	install -d -m0755 $(DESTDIR)/usr/share/hcw-athome/backend/
+	cp -a .sailsrc app.js cli api config node_modules package.json public views $(DESTDIR)/usr/share/hcw-athome/backend/
+	install -d -m0755 $(DESTDIR)/lib/systemd/system/
+	cp hcw-athome.service $(DESTDIR)/lib/systemd/system/
+	install -d -m0755 $(DESTDIR)/etc/hcw-athome/
+	cp .env.dist $(DESTDIR)/etc/hcw-athome/hcw-athome.conf
+	cp saml.key nginx/nginx-common nginx/nginx-proxy $(DESTDIR)/etc/hcw-athome/
+	install -d -m0755 $(DESTDIR)/usr/share/doc/hcw-athome-backend/nginx-samples/
+	cp -a nginx/hcw-athome-doctor.conf nginx/hcw-athome-patient.conf nginx/hcw-athome-scheduler.conf $(DESTDIR)/usr/share/doc/hcw-athome-backend/nginx-samples/
+	install -d -m0755 $(DESTDIR)/usr/bin/
+	cp helpers/cli.py $(DESTDIR)/usr/bin/hcw
+	chmod +x $(DESTDIR)/usr/bin/hcw
 
 docker:
 	docker build . -t docker.io/iabsis/hcw-backend
@@ -19,6 +31,9 @@ build-podman:
 	@ V=$$(cat .version) ; podman tag docker.io/iabsis/hcw-backend:latest docker.io/iabsis/hcw-backend:$$V
 	@ podman tag docker.io/iabsis/hcw-backend:latest docker.io/iabsis/hcw-backend:5
 	@ V=$$(cat .version) ; echo "Publish podman now with:\n podman push docker.io/iabsis/hcw-backend:$$V\n podman push docker.io/iabsis/hcw-backend:latest\n podman push docker.io/iabsis/hcw-backend:5"
+
+test:
+	@ echo "No backend tests"
 
 clean:
 	@ echo "cleaning the dist directory"

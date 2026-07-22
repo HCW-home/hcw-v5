@@ -46,8 +46,13 @@ build-podman:
 	@ V=$$(cat .version) ; echo "Publish podman now with:\n podman push docker.io/iabsis/hcw-patient:$$V\n podman push docker.io/iabsis/hcw-patient:latest\n podman push docker.io/iabsis/hcw-patient:5"
 
 install: web
-	@ install -d -m0755 /usr/local/share/hcw/patient
-	@ cp -a www/* /usr/local/share/hcw/patient
+	install -d -m0755 $(DESTDIR)/usr/share/hcw-athome/patient/
+	cp -r www/* $(DESTDIR)/usr/share/hcw-athome/patient/
+	mkdir -p $(DESTDIR)/etc/hcw-athome/
+	mv $(DESTDIR)/usr/share/hcw-athome/patient/assets/home.md.sample $(DESTDIR)/etc/hcw-athome/home.md
+	mv $(DESTDIR)/usr/share/hcw-athome/patient/assets/terms.md.sample $(DESTDIR)/etc/hcw-athome/terms.md
+	ln -sf /etc/hcw-athome/home.md $(DESTDIR)/usr/share/hcw-athome/patient/assets/home.md
+	ln -sf /etc/hcw-athome/terms.md $(DESTDIR)/usr/share/hcw-athome/patient/assets/terms.md
 
 sign:
 	cd android && jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ~/Documents/Clients/HUG/HUG@Home/android-release-key-playstore.jks app/build/outputs/bundle/release/app-release.aab alias-hug-at-home

@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+# See debhelper(7) (uncomment to enable).
+# Output every command that modifies files on the build system.
+#export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+# The backend ships a bundled Node application (node_modules): prevent
+# debhelper from stripping / analysing the binaries shipped inside it.
+override_dh_dwz:
+	echo "Ignore dh_dwz"
+
+override_dh_strip:
+	echo "Ignore dh_strip"
+
+override_dh_shlibdeps:
+	echo "Ignore dh_shlibdeps"
+
+override_dh_auto_test:
+	echo "Bypass dh_auto_test"

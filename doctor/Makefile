@@ -14,6 +14,8 @@ build: node_modules
 	npx ng build --configuration=custom
 
 install: build
+	install -d -m0755 $(DESTDIR)/usr/share/hcw-athome/caregiver/
+	cp -r dist/hug-at-home/* $(DESTDIR)/usr/share/hcw-athome/caregiver/
 
 archive:
 	@ tar -czvf "dosetup-$(timeStamp).tar.gz" dist

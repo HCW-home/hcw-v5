@@ -1,12 +1,11 @@
 flows:
-- podman
 - deb
+- podman-compose
 - publish-github
 - sonar
 options:
  distrib: "ubuntu"
  codename: "focal"
- external_git_url: "git@github.com:HCW-home/frontend-admin.git"
+ external_git_url: "git@github.com:HCW-home/hcw-v5.git"
 modes:
-- ON_VERSION
 - ON_TAG

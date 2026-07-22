@@ -19,6 +19,8 @@ build: node_modules
 	@ npx ng build --configuration=production --build-optimizer --aot --output-hashing=all --vendor-chunk
 
 install: build
+	install -d -m0755 $(DESTDIR)/usr/share/hcw-athome/admin/
+	cp -r dist/hug-at-home-admin/* $(DESTDIR)/usr/share/hcw-athome/admin/
 
 docker:
 	docker build . -t docker.io/iabsis/hcw-admin .
