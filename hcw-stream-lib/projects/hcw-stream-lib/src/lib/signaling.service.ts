@@ -52,7 +52,11 @@ export class SignalingService  {
 
     this._closed = false;
     this._signalingUrl;
-    this._signalingSocket = io(token)
+    this._signalingSocket = io(token, {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    })
 
 
 		this._signalingSocket.on('connect', () => {});
@@ -72,17 +76,20 @@ export class SignalingService  {
       this.onReconnecting.next(null);
 		});
 
-    this._signalingSocket.on('reconnect_failed', () =>
+    // In socket.io v4 the reconnection events are emitted by the Manager
+    // (this._signalingSocket.io), not by the Socket itself. Listening on the
+    // Socket would never fire these handlers.
+    this._signalingSocket.io.on('reconnect_failed', () =>
 		{
 			this.logger.warn('signaling Peer "reconnect_failed" event');
 
-      this.onDisconnected.next()
+      this.onDisconnected.next(null)
 
 			this.close();
     });
 
 
-		this._signalingSocket.on('reconnect', (attemptNumber) =>
+		this._signalingSocket.io.on('reconnect', (attemptNumber) =>
 		{
       this.onReconnected.next(attemptNumber)
 		});
@@ -196,9 +203,12 @@ export class SignalingService  {
 			}
 			catch (error)
 			{
+				// Only retry while an attempt is left, and always surface the last
+				// failure: falling out of the loop would resolve undefined, and every
+				// caller destructures the result straight away.
 				if (
 					error instanceof SocketTimeoutError &&
-					tries < requestRetries
+					tries < requestRetries - 1
 				)
 					this.logger.warn('sendRequest() | timeout, retrying [attempt:"%s"]', tries);
 				else

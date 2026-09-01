@@ -26,7 +26,11 @@ export class Stream {
     this.consumer = consumer;
     this.streamId = consumer.id
     this.kind = consumer.kind;
+    // Replace the track rather than stacking a new one on top of the dead ones:
+    // a peer that re-publishes (camera toggle, reconnection) reuses this Stream.
+    this.mediaStream = new MediaStream();
     this.mediaStream.addTrack(consumer.track);
+    this.onLayerChange.next()
   }
 
   consumerLayerChanged() {

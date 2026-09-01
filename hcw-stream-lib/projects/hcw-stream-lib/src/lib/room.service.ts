@@ -19,10 +19,14 @@ const mobileLastN = 1;
 const videoAspectRatio = 1.777;
 
 const simulcast = true;
+// Cap every simulcast layer. Webcam capture is 640px wide at 15fps, so these are
+// generous; uncapped, four publishers saturate a hospital Wi-Fi or mobile uplink,
+// and the packet loss that follows is what tears the transports down in the first
+// place. Total per publisher stays under the server's maxIncomingBitrate (1.5Mb/s).
 const simulcastEncodings = [
-  { scaleResolutionDownBy: 4 },
-  { scaleResolutionDownBy: 2 },
-  { scaleResolutionDownBy: 1 },
+  { scaleResolutionDownBy: 4, maxBitrate: 100000 },
+  { scaleResolutionDownBy: 2, maxBitrate: 300000 },
+  { scaleResolutionDownBy: 1, maxBitrate: 800000 },
 ];
 
 const VIDEO_CONSTRAINS = {
@@ -51,11 +55,6 @@ const VIDEO_CONSTRAINS = {
 const PC_PROPRIETARY_CONSTRAINTS = {
   optional: [{ googDscp: true }],
 };
-
-const VIDEO_SIMULCAST_ENCODINGS = [
-  { scaleResolutionDownBy: 4, maxBitRate: 100000 },
-  { scaleResolutionDownBy: 1, maxBitRate: 1200000 },
-];
 
 // Used for VP9 webcam video.
 const VIDEO_KSVC_ENCODINGS = [{ scalabilityMode: "S3T3_KEY" }];
@@ -103,6 +102,7 @@ export class RoomService {
   public onCamError: Subject<any> = new Subject();
   public onMicError: Subject<any> = new Subject();
   public onVolumeChange: Subject<any> = new Subject();
+  public onJoinError: Subject<any> = new Subject();
   private screenStream: MediaStream | null = null;
   constructor(
     private signalingService: SignalingService,
@@ -221,6 +221,8 @@ export class RoomService {
     this.subscriptions.forEach((subscription) => {
       subscription.unsubscribe();
     });
+    // The service is root-scoped, so a stale list would keep growing across calls.
+    this.subscriptions = [];
 
     this.disconnectLocalHark();
     this.remotePeersService.clearPeers();
@@ -753,8 +755,7 @@ export class RoomService {
 
           if (firstVideoCodec.mimeType.toLowerCase() === "video/vp9")
             encodings = VIDEO_KSVC_ENCODINGS;
-          else if (simulcastEncodings) encodings = simulcastEncodings;
-          else encodings = VIDEO_SIMULCAST_ENCODINGS;
+          else encodings = simulcastEncodings;
 
           this._webcamProducer = await this._sendTransport.produce({
             track,
@@ -1014,9 +1015,32 @@ export class RoomService {
           this._recvTransport = null;
         }
 
-        this.remotePeersService.clearPeers();
+        this._consumers.clear();
+
+        // The device must be dropped too, otherwise _joinRoom() sees a loaded
+        // device and skips the rejoin, leaving us with no transports at all.
+        this._mediasoupDevice = null;
+
+        // Peers are deliberately kept: a blip of a couple of seconds should not
+        // empty everyone's screen. The join response reconciles the list.
 
         // store.dispatch(roomActions.setRoomState('connecting'));
+      })
+    );
+
+    this.subscriptions.push(
+      this.signalingService.onReconnected.subscribe(() => {
+        // The server drives the rejoin with roomReady/roomBack. This is only a late
+        // fallback for the case where that notification never arrives; joining
+        // immediately would race the server attaching its request handler and stall
+        // on the 20s request timeout.
+        setTimeout(() => {
+          if (this._closed || this._recvTransport) return;
+
+          this.logger.warn('no roomReady after reconnection, joining anyway');
+
+          this._joinRoom({ joinVideo, joinAudio });
+        }, 3000);
       })
     );
 
@@ -1087,7 +1111,11 @@ export class RoomService {
             // }
           })
         )
-        .subscribe()
+        .subscribe({
+          // A failing consume() must not terminate the stream, or no remote peer
+          // would ever be rendered again for the rest of the call.
+          error: (error) => this.logger.error('onNewConsumer() [error:"%o"]', error),
+        })
     );
 
     this.subscriptions.push(
@@ -1153,10 +1181,9 @@ export class RoomService {
 
                   this._consumers.delete(consumerId);
 
-                  const { peerId } = consumer.appData;
-
-                  // store.dispatch(
-                  //   consumerActions.removeConsumer(consumerId, peerId));
+                  // Drop the stream too, otherwise the tile keeps rendering a
+                  // closed track (frozen video / silent audio).
+                  this.remotePeersService.closeStream(consumerId);
 
                   break;
                 }
@@ -1433,8 +1460,10 @@ export class RoomService {
     }`;
 
     try {
-      if (this._mediasoupDevice && this._mediasoupDevice.loaded) {
-        this.logger.warn('_joinRoom() device already loaded, skipping');
+      // A reconnection closes both transports, so a loaded device on its own does
+      // not mean we are still in the room. Only skip when the session is complete.
+      if (this._mediasoupDevice && this._mediasoupDevice.loaded && this._recvTransport) {
+        this.logger.warn('_joinRoom() already joined, skipping');
         this._joiningRoom = false;
         return;
       }
@@ -1640,7 +1669,10 @@ export class RoomService {
       this._joiningRoom = false;
       this.logger.error('_joinRoom() [error:"%o"]', error);
 
-      this.close();
+      // Leave the session open: socket.io keeps retrying and the next
+      // roomReady/roomBack will drive another join attempt. Closing here used to
+      // make a single slow request the end of the call.
+      this.onJoinError.next(error);
     }
   }
   deviceInfo() {

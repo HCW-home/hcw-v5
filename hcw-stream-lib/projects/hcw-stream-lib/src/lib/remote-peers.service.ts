@@ -21,13 +21,15 @@ export class RemotePeersService {
 
 
   updatePeers() {
-    setTimeout(() => 	this._remotePeers.next(this.peers)    ,0)
+    // Emit a new array reference so change detection sees the mutation.
+    setTimeout(() => 	this._remotePeers.next([...this.peers])    ,0)
   }
 
   clearPeers(){
-    this._remotePeers = <BehaviorSubject<Peer[]>>new BehaviorSubject([]);
-    this.remotePeers = this._remotePeers.asObservable();
+    // Never swap the subject: subscribers took their reference once and would
+    // silently stop receiving updates for the rest of the call.
     this.peers = []
+    this.updatePeers()
   }
   newPeer(id): Peer {
     const peer = new Peer()
@@ -48,7 +50,13 @@ export class RemotePeersService {
   }
 
   addPeers(peers){
-		for (const peer of peers)
+		// Reconcile against the authoritative list returned by the server: peers that
+		// left while we were disconnected must disappear, not linger forever.
+		const ids = new Set((peers || []).map(peer => peer.id));
+
+		this.peers = this.peers.filter(p => ids.has(p.id));
+
+		for (const peer of peers || [])
 		{
 			if (!this.peers.find(p=>peer.id === p.id))
 			{
@@ -56,6 +64,18 @@ export class RemotePeersService {
 			}
 		}
 		this.updatePeers();
+  }
+
+  closeStream(consumerId: string) {
+    for (const peer of this.peers) {
+      const index = peer.streams.findIndex(s => s.consumer?.id === consumerId)
+
+      if (index !== -1) {
+        peer.streams.splice(index, 1)
+        this.updatePeers()
+        return
+      }
+    }
   }
 
   newConsumer(consumer: mediasoup.types.Consumer, peerId: string, type, producerPaused) {
@@ -98,7 +118,7 @@ export class RemotePeersService {
 
   getStreamByConsumerId(consumerId: string): Stream {
     for (const peer of this.peers) {
-      const stream = peer.streams.find(s => s.consumer.id === consumerId)
+      const stream = peer.streams.find(s => s.consumer?.id === consumerId)
       if (stream) {
         return stream
       }
