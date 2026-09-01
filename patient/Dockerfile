@@ -1,7 +1,7 @@
 FROM node:22 AS builder
 ENV VERSION=0.5.23
 WORKDIR /usr/src/app
-COPY package*.json ./
+COPY package*.json yarn.lock ./
 RUN yarn
 COPY . .
 RUN npx ionic cap build browser --prod --no-open

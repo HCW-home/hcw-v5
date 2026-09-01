@@ -19,9 +19,24 @@ export class PeerVideoComponent implements AfterViewInit, OnDestroy, OnChanges {
 
   ngAfterViewInit() {
     this.updateVideoSrc();
+    // Mobile browsers pause media elements when the tab goes to the background
+    // (app switch, screen lock) and do not resume them on return, which leaves a
+    // frozen tile even though the track is still flowing.
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
+  private onVisibilityChange = () => {
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+    const element = this.elementRef?.nativeElement;
+    if (element && element.paused) {
+      element.play().catch(() => {});
+    }
+  };
+
   ngOnDestroy(): void {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     clearTimeout(this.retryTimeout);
     this.subscriptions.forEach((s) => s.unsubscribe());
     this.subscriptions = [];

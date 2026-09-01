@@ -18,7 +18,21 @@ export class PeerAudioComponent implements OnInit, OnDestroy, OnChanges {
 
   ngAfterViewInit() {
     this.updateAudioSrc();
+    // Mobile browsers pause media elements when the tab goes to the background
+    // (app switch, screen lock) and do not resume them on return, which leaves a
+    // frozen tile even though the track is still flowing.
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
+
+  private onVisibilityChange = () => {
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+    const element = this.elementRef?.nativeElement;
+    if (element && element.paused) {
+      element.play().catch(() => {});
+    }
+  };
 
   ngOnChanges(changes) {
     if (changes.stream) {
@@ -37,6 +51,7 @@ export class PeerAudioComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnDestroy(): void {
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.subscriptions.forEach((s) => s.unsubscribe());
     this.subscriptions = [];
   }

@@ -3,7 +3,7 @@ import { RemotePeersService } from "./remote-peers.service";
 import { LogService } from "./log.service";
 import { SignalingService } from "./signaling.service";
 
-import { Injectable } from "@angular/core";
+import { Injectable, NgZone } from "@angular/core";
 
 import { switchMap } from "rxjs/operators";
 import * as bowser from "bowser";
@@ -104,10 +104,13 @@ export class RoomService {
   public onVolumeChange: Subject<any> = new Subject();
   public onJoinError: Subject<any> = new Subject();
   private screenStream: MediaStream | null = null;
+  private _volumeFrame: number = null;
+  private _volumeContext: AudioContext = null;
   constructor(
     private signalingService: SignalingService,
     private logger: LogService,
-    private remotePeersService: RemotePeersService
+    private remotePeersService: RemotePeersService,
+    private ngZone: NgZone
   ) {}
 
   init({
@@ -225,6 +228,7 @@ export class RoomService {
     this.subscriptions = [];
 
     this.disconnectLocalHark();
+    this.disconnectVolumeMeter();
     this.remotePeersService.clearPeers();
   }
 
@@ -423,6 +427,68 @@ export class RoomService {
       }
     }
   }
+  // The meter used to be an uncancellable requestAnimationFrame loop with its own
+  // AudioContext, started again on every updateMic({ start: true }). The loops
+  // stacked up (media test, mic restart, every reconnection) and each one dragged
+  // the whole Angular change detection along at display refresh rate, which is
+  // exactly the budget a phone needs for encoding and decoding video.
+  disconnectVolumeMeter() {
+    if (this._volumeFrame !== null) {
+      window.cancelAnimationFrame(this._volumeFrame);
+      this._volumeFrame = null;
+    }
+
+    if (this._volumeContext) {
+      this._volumeContext.close().catch(() => {});
+      this._volumeContext = null;
+    }
+  }
+
+  connectVolumeMeter(stream: MediaStream) {
+    this.disconnectVolumeMeter();
+
+    this._volumeContext = new AudioContext();
+
+    const sourceNode = this._volumeContext.createMediaStreamSource(stream);
+    const analyserNode = this._volumeContext.createAnalyser();
+
+    sourceNode.connect(analyserNode);
+
+    const pcmData = new Float32Array(analyserNode.fftSize);
+    let lastEmit = 0;
+
+    // Outside the Angular zone: the loop itself must never schedule change
+    // detection. Nothing subscribes to onVolumeChange during a call, only the
+    // media test screens do, so the emission re-enters the zone on demand.
+    this.ngZone.runOutsideAngular(() => {
+      const onFrame = (now: number) => {
+        if (!this._volumeContext) return;
+
+        this._volumeFrame = window.requestAnimationFrame(onFrame);
+
+        if (!this.onVolumeChange.observers.length || now - lastEmit < 100) return;
+
+        lastEmit = now;
+
+        analyserNode.getFloatTimeDomainData(pcmData);
+
+        let sumSquares = 0.0;
+
+        for (const amplitude of pcmData) {
+          sumSquares += amplitude * amplitude;
+        }
+
+        const value = Math.sqrt(sumSquares / pcmData.length);
+
+        this.ngZone.run(() =>
+          this.onVolumeChange.next({ peer: this._peerId, volume: value })
+        );
+      };
+
+      this._volumeFrame = window.requestAnimationFrame(onFrame);
+    });
+  }
+
   disconnectLocalHark() {
 
     if (this._harkStream != null) {
@@ -447,11 +513,15 @@ export class RoomService {
 
     newTrack.enabled = true;
 
-    this._hark = hark(this._harkStream, {
-      play: false,
-      interval: 10,
-      threshold: -50,
-      history: 100,
+    // 10ms meant a zone-patched timer firing 100 times a second, so 100 extra
+    // change detection passes per second for a value read nowhere but here.
+    this.ngZone.runOutsideAngular(() => {
+      this._hark = hark(this._harkStream, {
+        play: false,
+        interval: 100,
+        threshold: -50,
+        history: 100,
+      });
     });
 
     this._hark.lastVolume = -100;
@@ -554,6 +624,7 @@ export class RoomService {
 
       if ((restart && this._micProducer) || start) {
         this.disconnectLocalHark();
+        this.disconnectVolumeMeter();
 
         if (this._micProducer) await this.disableMic();
 
@@ -615,24 +686,7 @@ export class RoomService {
 
         this.connectLocalHark(track);
 
-        const audioContext = new AudioContext();
-        const mediaStreamAudioSourceNode =
-          audioContext.createMediaStreamSource(stream);
-        const analyserNode = audioContext.createAnalyser();
-        mediaStreamAudioSourceNode.connect(analyserNode);
-
-        const pcmData = new Float32Array(analyserNode.fftSize);
-        const onFrame = () => {
-          analyserNode.getFloatTimeDomainData(pcmData);
-          let sumSquares = 0.0;
-          for (const amplitude of pcmData) {
-            sumSquares += amplitude * amplitude;
-          }
-          const value = Math.sqrt(sumSquares / pcmData.length);
-          this.onVolumeChange.next({ peer: this._peerId, volume: value });
-          window.requestAnimationFrame(onFrame);
-        };
-        window.requestAnimationFrame(onFrame);
+        this.connectVolumeMeter(stream);
       } else if (this._micProducer) {
         ({ track } = this._micProducer);
 
@@ -1365,6 +1419,9 @@ export class RoomService {
 
     this._micProducer.removeAllListeners('trackended');
     this._micProducer.close();
+
+    this.disconnectLocalHark();
+    this.disconnectVolumeMeter();
 
     // store.dispatch(
     // 	producerActions.removeProducer(this._micProducer.id));

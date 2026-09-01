@@ -1,7 +1,7 @@
 FROM mirror.gcr.io/library/node:22 AS builder
 ENV VERSION=0.5.14
 WORKDIR /usr/src/app
-COPY package*.json ./
+COPY package*.json yarn.lock ./
 RUN yarn
 COPY . .
 RUN npx ng build --configuration=production --build-optimizer --aot --output-hashing=all --vendor-chunk

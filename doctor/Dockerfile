@@ -1,7 +1,7 @@
 FROM node:22 AS builder
 ENV VERSION=5.3.29
 WORKDIR /usr/src/app
-COPY package*.json ./
+COPY package*.json yarn.lock ./
 COPY yarn.lock ./
 RUN npx yarn install
 COPY . .
