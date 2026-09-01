@@ -739,6 +739,11 @@ export class RoomService {
     let track;
 
     try {
+      // A reconnection clears both of these; without the guard we would throw a
+      // TypeError deep inside and land in the same dead end as a camera failure.
+      if (!this._mediasoupDevice || !this._sendTransport)
+        throw new Error("not connected to the room");
+
       if (!this._mediasoupDevice.canProduce("video"))
         throw new Error("cannot produce video");
 
@@ -765,11 +770,14 @@ export class RoomService {
       let deviceId;
       if (newDeviceId) {
         deviceId = newDeviceId;
+        // _webcams is only refreshed by _getWebcamDeviceId(), which we skip on this
+        // branch: a stale map made a perfectly valid camera look unknown.
+        await this._updateWebcams();
       } else {
         deviceId = await this._getWebcamDeviceId();
       }
 
-      const device = this._webcams[newDeviceId || deviceId];
+      const device = this._webcams[deviceId];
 
       if (!device) throw new Error("no webcam devices");
 
@@ -777,15 +785,33 @@ export class RoomService {
       const frameRate = 15;
 
       if ((restart && this._webcamProducer) || start) {
+        // Read it before disableWebcam(): that closes the producer and, since
+        // mediasoup-client defaults to stopTracks, stops the current track too.
+        const previousDeviceId = this._webcamProducer?.track?.getSettings?.().deviceId;
+
         if (this._webcamProducer) await this.disableWebcam();
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            deviceId: { ideal: deviceId },
-            ...VIDEO_CONSTRAINS[resolution],
-            frameRate,
-          },
-        });
+        let stream: MediaStream;
+
+        try {
+          stream = await this._getWebcamStream(deviceId, resolution, frameRate);
+        } catch (error) {
+          // Switching cameras fails on plenty of mobile devices. The previous
+          // producer is already closed at this point, so without a fallback the
+          // user is left with no video at all until they rejoin the call.
+          if (!previousDeviceId || previousDeviceId === deviceId) throw error;
+
+          this.logger.warn(
+            'updateWebcam() | "%s" unavailable, falling back to "%s"',
+            deviceId,
+            previousDeviceId
+          );
+
+          stream = await this._getWebcamStream(previousDeviceId, resolution, frameRate);
+
+          // Video is back, but the switch did not happen: the UI must say so.
+          this.onCamError.next(error);
+        }
 
         [track] = stream.getVideoTracks();
 
@@ -1385,6 +1411,16 @@ export class RoomService {
     } catch (error) {
       this.logger.error('_updateWebcams() [error:"%o"]', error);
     }
+  }
+
+  private _getWebcamStream(deviceId, resolution, frameRate): Promise<MediaStream> {
+    return navigator.mediaDevices.getUserMedia({
+      video: {
+        deviceId: { ideal: deviceId },
+        ...VIDEO_CONSTRAINS[resolution],
+        frameRate,
+      },
+    });
   }
 
   async disableWebcam() {

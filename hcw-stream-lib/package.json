@@ -1,7 +1,7 @@
 {
   "name": "hcw-stream-lib",
   "private": true,
-  "version": "0.0.29",
+  "version": "0.0.30",
   "scripts": {
     "prepublishOnly": "echo 'ERROR: this is the Angular workspace, not the library. Publish with: make build (which publishes dist/hcw-stream-lib).' && exit 1",
     "ng": "ng",

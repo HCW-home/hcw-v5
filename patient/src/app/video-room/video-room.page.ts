@@ -276,7 +276,12 @@ export class VideoRoomPage implements OnInit, OnDestroy {
             this.firstCam = this.videoDevices[0].deviceId;
             this.lastCam =
               this.videoDevices[this.videoDevices.length - 1].deviceId;
-            this.currentVideoDevice = this.firstCam;
+            // Read the camera actually in use. Resetting to firstCam on every
+            // producer made the toggle one-way: after the first flip the next tap
+            // asked for the camera already running, so it never switched back.
+            const [videoTrack] = stream?.mediaStream?.getVideoTracks?.() || [];
+            this.currentVideoDevice =
+              videoTrack?.getSettings?.().deviceId || this.firstCam;
           } else {
             this.currentVideoDevice = null;
           }
@@ -605,15 +610,18 @@ export class VideoRoomPage implements OnInit, OnDestroy {
   }
 
   toggleCamera() {
-    if (this.currentVideoDevice === this.firstCam) {
-      this.currentVideoDevice = this.lastCam;
-    } else {
-      this.currentVideoDevice = this.firstCam;
+    if (this.videoDevices?.length < 2 || this.firstCam === this.lastCam) {
+      this.logger.debug("Only one camera available, nothing to toggle");
+      return;
     }
 
+    const target =
+      this.currentVideoDevice === this.firstCam ? this.lastCam : this.firstCam;
+
+    // currentVideoDevice is refreshed from the track that actually starts, in the
+    // onCamProducing handler, so a failed switch does not desynchronise the state.
     this.roomService
-      .updateWebcam({ restart: true, newDeviceId: this.currentVideoDevice })
-      .then(() => {})
+      .updateWebcam({ restart: true, newDeviceId: target })
       .catch((error) => {
         console.error("Error updating devices", error);
       });
