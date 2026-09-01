@@ -192,7 +192,7 @@ export class LoginPage implements OnInit {
     if (videoCallTested) {
       return this.router.navigate(["consultation", consultationId]);
     } else {
-      return this.router.navigate(["test-call"]);
+      return this.router.navigate(["test-call"], { queryParams: { invite: this.inviteToken } });
     }
   }
 
@@ -243,8 +243,12 @@ export class LoginPage implements OnInit {
               })
               .toPromise()
               .then((consultation) => {
-                if (!consultation) {
-                  return this.router.navigate(["await-consultation"]);
+                if (!consultation || !consultation.id) {
+                  // No await-consultation route exists: navigating there rejected,
+                  // and the rejection was swallowed as an invalid-token error.
+                  console.warn("No consultation available yet for this invite");
+                  this.noInviteError = true;
+                  return;
                 }
                 safeSetItem("currentConsultation", consultation.id);
                 this.handleConsultation(consultation.id);
@@ -306,7 +310,7 @@ export class LoginPage implements OnInit {
         safeSetItem('lastName',this.lastName);
       }
 
-      this.router.navigate([`/test-call`]);
+      this.router.navigate([`/test-call`], { queryParams: { invite: this.inviteToken } });
     }
   }
 
@@ -426,7 +430,10 @@ export class LoginPage implements OnInit {
         .toPromise()
         .then((user) => {
           if (user.role === "translator") {
-            return this.router.navigate(["await-consultation"]);
+            // Translators wait for the consultation to start; the template already
+            // renders that state. Navigating to the non-existent await-consultation
+            // route left them on a screen where nothing happened.
+            return null;
           }
 
           return this.conServ
@@ -439,6 +446,9 @@ export class LoginPage implements OnInit {
             .toPromise();
         })
         .then((consultation) => {
+          if (!consultation || !consultation.id) {
+            return;
+          }
           safeSetItem("currentConsultation", consultation.id);
           this.router.navigate(["consultation", consultation.id]);
           // this.router.navigate(['test-call']);
@@ -457,7 +467,7 @@ export class LoginPage implements OnInit {
         .loginWithInvite(inviteToken, this.birthDate, this.translator)
         .toPromise()
         .then((user) => {
-          this.router.navigate(["test-call"]);
+          this.router.navigate(["test-call"], { queryParams: { invite: inviteToken } });
         })
         .catch((err) => {
           console.log(err);

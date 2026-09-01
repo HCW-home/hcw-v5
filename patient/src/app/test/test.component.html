@@ -63,6 +63,10 @@
                                         : ("test.joinTheConsultation" | translate)
                                 }}
                             </button>
+
+                            <p class="error" *ngIf="joinError">
+                                {{ "test.connectivityIssue" | translate }}
+                            </p>
                         </div>
                         <div class="video-loop position-relative">
                             <div *ngIf="showSpinner" class="loader"  [hidden]="accessHardwareGranted">

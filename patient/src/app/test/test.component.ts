@@ -51,6 +51,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
 
     currentUser;
+    joinError = false;
     submitted = false;
     error = "";
     email: string;
@@ -98,7 +99,14 @@ export class TestComponent implements OnInit, OnDestroy {
     ngOnInit() {
         this.showSpinner = true;
         this.testStarted = true;
-        this.inviteToken = safeGetItem("inviteToken");
+        // Prefer the URL: navigating here used to drop the invite from the
+        // address bar, leaving localStorage as the only carrier - and a failed
+        // attempt used to wipe it, stranding the user on this screen.
+        const urlToken = this.route.snapshot.queryParamMap.get("invite");
+        this.inviteToken = urlToken || safeGetItem("inviteToken");
+        if (this.inviteToken) {
+            safeSetItem("inviteToken", this.inviteToken);
+        }
         const source = this.route.snapshot.queryParamMap.get('source');
         if (source === 'acknowledge') {
             this.showJoinButton = false;
@@ -271,6 +279,7 @@ export class TestComponent implements OnInit, OnDestroy {
 
     onSubmit() {
         this.endTestVideo();
+        this.joinError = false;
         if (this.submitted) {
             return;
         }
@@ -391,14 +400,24 @@ export class TestComponent implements OnInit, OnDestroy {
             })
             .toPromise()
             .then((consultation) => {
-                if (!consultation) {
-                    return this.router.navigate(["await-consultation"]);
+                if (!consultation || !consultation.id) {
+                    // There is no await-consultation route in this app, so
+                    // navigating there only ever rejected: the tap looked like it
+                    // did nothing, and the rejection was then handled as a bad
+                    // token, which logged the user out and deleted the invite.
+                    console.warn("No consultation available yet for this invite");
+                    this.joinError = true;
+                    return;
                 }
                 safeSetItem("currentConsultation", consultation.id);
                 this.handleConsultation(consultation.id);
             })
             .catch((err) => {
-                this.handleTokenError(err);
+                // Do not treat this as an invalid invite: handleTokenError logs the
+                // user out and removes inviteToken, which is the only thing left
+                // identifying them once the token has gone from the URL.
+                console.error("Could not join the consultation", err);
+                this.joinError = true;
             })
             .finally(() => {
                 this.submitted = false;
