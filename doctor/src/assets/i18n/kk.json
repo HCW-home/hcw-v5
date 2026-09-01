@@ -166,6 +166,7 @@
         "consultationsHistory": "Консультациялар тарихы"
     },
     "consultation": {
+        "reconnecting": "Бейне серверге қайта қосылу...",
         "start": "БАСТАУ",
         "aCall": "ҚОҢЫРАУ",
         "joinVideoCall": "Бейнеге қосылыңыз",

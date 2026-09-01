@@ -21,6 +21,11 @@
         <span>{{ 'consultation.connectingToVideoServer' | translate }}</span>
       </div>
 
+      <div *ngIf="!connecting && reconnecting" class="connection-overlay">
+        <div class="connection-spinner"></div>
+        <span>{{ 'consultation.reconnecting' | translate }}</span>
+      </div>
+
       <div *ngIf="!connecting && myCamStream && remoteUsers.length === 0" class="connection-overlay">
         <span>{{ 'consultation.waitingForPatient' | translate }}</span>
       </div>
@@ -46,10 +51,9 @@
 
       <!-- Remotes -->
       <div
-        *ngFor="let user of this.remoteUsers"
-        class="OT_root OT_publisher OT_remote custom-class OV_big"
-        id="remoteUsers">
-        <ng-container *ngFor="let stream of user.streams">
+        *ngFor="let user of this.remoteUsers; trackBy: trackByPeerId"
+        class="OT_root OT_publisher OT_remote custom-class OV_big">
+        <ng-container *ngFor="let stream of user.streams; trackBy: trackByStreamId">
           <app-peer-video
             *ngIf="stream.kind === 'video'"
             [stream]="stream"

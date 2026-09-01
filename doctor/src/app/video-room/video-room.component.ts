@@ -127,6 +127,7 @@ export class VideoRoomComponent implements OnInit, OnDestroy {
     if (this.rejected) return;
     this.accepted = true;
     this.connecting = true;
+    this.reconnecting = false;
 
     this.remoteUsers = [];
 
@@ -198,6 +199,9 @@ export class VideoRoomComponent implements OnInit, OnDestroy {
       if (signalingService.onDisconnected) {
         this.subscriptions.push(
           signalingService.onDisconnected.subscribe(() => {
+            // Only fires when the server closed the socket for good or socket.io
+            // gave up retrying. Transient drops go through onReconnecting instead.
+            this.reconnecting = false;
             if (!this.rejected) {
               this.snackBar.open(
                 this.translate.instant('consultation.videoConnectionLost'),
@@ -209,9 +213,19 @@ export class VideoRoomComponent implements OnInit, OnDestroy {
           })
         );
       }
+      if (signalingService.onReconnecting) {
+        this.subscriptions.push(
+          signalingService.onReconnecting.subscribe(() => {
+            // A transient drop is not a hangup: show the state and let socket.io
+            // retry, the room rejoins itself once the server answers again.
+            this.reconnecting = true;
+          })
+        );
+      }
       if (signalingService.onReconnected) {
         this.subscriptions.push(
           signalingService.onReconnected.subscribe(() => {
+            this.reconnecting = false;
             this.snackBar.open(
               this.translate.instant('consultation.reconnected'),
               null,
@@ -294,6 +308,14 @@ export class VideoRoomComponent implements OnInit, OnDestroy {
     this.rejected = true;
     this.roomService?.close();
     this.hangup.emit(true);
+  }
+
+  trackByPeerId(index: number, user) {
+    return user?.id ?? index;
+  }
+
+  trackByStreamId(index: number, stream) {
+    return stream?.streamId ?? index;
   }
 
   resize() {

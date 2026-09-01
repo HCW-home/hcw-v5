@@ -63,6 +63,7 @@
         "close": "Cerrar"
     },
     "consultation": {
+        "reconnecting": "Reconectando al servidor de vídeo...",
         "videoCall": "Videollamada",
         "joinAudioCall": "Unirse al audio",
         "microAndCameraConfiguration": "Configuración de micro y cámara",

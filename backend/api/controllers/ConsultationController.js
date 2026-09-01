@@ -1378,16 +1378,43 @@ module.exports = {
 
   async call(req, res) {
     try {
-      const mediasoupServers = await sails.helpers.getMediasoupServers();
-      sails.config.customLogger.log('verbose', `Retrieved mediasoup servers count is ${mediasoupServers.length}`, null, 'server-action', req.user?.id);
-      const serverIndex = Math.floor(Math.random() * mediasoupServers.length);
-      const mediasoupServer = mediasoupServers[serverIndex];
-      sails.config.customLogger.log('info', `Selected mediasoup server ${mediasoupServer.url}`, null, 'message', req.user?.id);
       const id = validator.escape(req.params.consultation);
       const consultation = await Consultation.findOne({ _id: id });
       if (!consultation) {
         sails.config.customLogger.log('warn', `Consultation with id ${id} not found`, null, 'message', req.user?.id);
         return res.notFound({ error: 'Consultation not found' });
+      }
+      // Stick to the SFU of a call that is still live on this consultation. Drawing
+      // a fresh server at random would put the new call in a room on another host,
+      // leaving whoever is still connected to the previous one on their own.
+      const [activeCall] = await Message.find({
+        where: {
+          consultation: id,
+          type: { in: ['videoCall', 'audioCall'] },
+          status: { in: ['ringing', 'ongoing'] },
+        },
+        sort: [{ createdAt: 'DESC' }],
+      }).limit(1);
+      let mediasoupServer;
+      if (activeCall && activeCall.mediasoupURL) {
+        [mediasoupServer] = await MediasoupServer.find({ url: activeCall.mediasoupURL }).limit(1);
+        if (!mediasoupServer && activeCall.mediasoupURL === process.env.MEDIASOUP_URL) {
+          mediasoupServer = {
+            url: process.env.MEDIASOUP_URL,
+            password: process.env.MEDIASOUP_SECRET,
+            username: process.env.MEDIASOUP_USER,
+          };
+        }
+        if (mediasoupServer) {
+          sails.config.customLogger.log('info', `Reusing mediasoup server ${mediasoupServer.url} from live call ${activeCall.id}`, null, 'message', req.user?.id);
+        }
+      }
+      if (!mediasoupServer) {
+        const mediasoupServers = await sails.helpers.getMediasoupServers();
+        sails.config.customLogger.log('verbose', `Retrieved mediasoup servers count is ${mediasoupServers.length}`, null, 'server-action', req.user?.id);
+        const serverIndex = Math.floor(Math.random() * mediasoupServers.length);
+        mediasoupServer = mediasoupServers[serverIndex];
+        sails.config.customLogger.log('info', `Selected mediasoup server ${mediasoupServer.url}`, null, 'message', req.user?.id);
       }
       sails.config.customLogger.log('info', `Consultation found ${consultation.id}`, null, 'message', req.user?.id);
       const calleeId = req.user.id === consultation.owner ? consultation.acceptedBy : consultation.owner;
@@ -1573,12 +1600,26 @@ module.exports = {
         }
         await Message.removeFromCollection(message.id, 'currentParticipants', req.user.id);
         const isParticipant = message.currentParticipants.find(p => p.id === req.user.id);
-        if (req.user.role === 'doctor' && isParticipant) {
-          await Message.endCall(message, consultation, 'DOCTOR_LEFT');
-          sails.config.customLogger.log('info', `Call ended due to doctor leaving messageId ${message.id} doctorId ${req.user.id}`, null, 'server-action', req.user?.id);
-        } else if (message.currentParticipants.length <= 2 && isParticipant) {
+        // currentParticipants was populated before the removal above, so it still
+        // holds the leaver. Work on the post-removal set instead: using the stale
+        // count ended three-way conferences as soon as the second person left.
+        const remaining = message.currentParticipants.filter(p => p.id !== req.user.id);
+        const caregiverRoles = [
+          sails.config.globals.ROLE_DOCTOR,
+          sails.config.globals.ROLE_ADMIN,
+          sails.config.globals.ROLE_EXPERT,
+        ];
+        const caregiverLeft = remaining.some(p => caregiverRoles.includes(p.role));
+        if (isParticipant && remaining.length <= 1) {
           await Message.endCall(message, consultation, 'MEMBERS_LEFT');
           sails.config.customLogger.log('info', `Call ended due to members leaving messageId ${message.id}`, null, 'server-action', req.user?.id);
+        } else if (isParticipant && !caregiverLeft) {
+          // Only tear the call down once no caregiver is left: a single doctor
+          // reloading their page used to end the call for everybody.
+          await Message.endCall(message, consultation, 'DOCTOR_LEFT');
+          sails.config.customLogger.log('info', `Call ended, no caregiver left messageId ${message.id} userId ${req.user.id}`, null, 'server-action', req.user?.id);
+        } else {
+          sails.config.customLogger.log('info', `Participant left ongoing call messageId ${message.id} userId ${req.user.id} remaining ${remaining.length}`, null, 'server-action', req.user?.id);
         }
         return res.json({ status: 200 });
       }

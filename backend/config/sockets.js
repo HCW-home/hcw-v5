@@ -9,10 +9,12 @@ module.exports.sockets = {
   pass: process.env.REDIS_PASSWORD,
   origins: '*:*',
 
-  'heartbeat timeout': 25,
-  pingTimeout:10000,
-  'heartbeat interval': 15,
-  pingInterval:15000,
+  // socket.io v4 defaults. The previous 10s/15s pair disconnected clients on any
+  // 10s stall, which is common on congested mobile links, and every reconnection
+  // has to re-pass beforeConnect below. The 'heartbeat *' keys were socket.io 0.9
+  // options and had no effect.
+  pingTimeout: 20000,
+  pingInterval: 25000,
 
   beforeConnect(handshake, proceed) {
     if (handshake._query && handshake._query.token) {

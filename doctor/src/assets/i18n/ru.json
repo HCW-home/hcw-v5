@@ -123,6 +123,7 @@
     "closedBy": "Закрыто"
   },
   "consultation": {
+    "reconnecting": "Переподключение к видеосерверу...",
     "start": "НАЧАТЬ",
     "aCall": "ЗВОНОК",
     "anotherDoctorInCall": "Другой врач в данный момент участвует в звонке",

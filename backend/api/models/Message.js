@@ -1,6 +1,3 @@
-const RINGING_TIMEOUT = 5 * 60 * 1000;
-const CALL_DURATION_TIMEOUT = 2 * 60 * 60 * 1000;
-
 module.exports = {
   attributes: {
     from: {
@@ -174,19 +171,10 @@ module.exports = {
       sails.config.customLogger.log('info', `Broadcasting newMessage event for call type userId ${message.from}`, null, 'server-action');
       sails.sockets.broadcast(message.from, 'newMessage', { data: message });
 
-      sails.config.customLogger.log('info', `Scheduling RINGING_TIMEOUT helper messageId ${message.id}`, null, 'server-action');
-      await sails.helpers.schedule.with({
-        name: 'RINGING_TIMEOUT',
-        data: { message, consultation },
-        time: new Date(Date.now() + RINGING_TIMEOUT),
-      });
-
-      sails.config.customLogger.log('info', `Scheduling DURATION_TIMEOUT helper messageId ${message.id}`, null, 'server-action');
-      await sails.helpers.schedule.with({
-        name: 'DURATION_TIMEOUT',
-        data: { message },
-        time: new Date(Date.now() + CALL_DURATION_TIMEOUT),
-      });
+      // RINGING_TIMEOUT and DURATION_TIMEOUT are enforced by the cron jobs in
+      // config/cron.js. Scheduling them here never worked: sails.helpers.schedule
+      // only dispatches names present in its inviteJobs map, and it reads
+      // data.invite while these calls pass { message, consultation }.
     }
 
     const publicInvite = await PublicInvite.findOne({

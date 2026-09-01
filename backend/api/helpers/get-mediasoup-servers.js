@@ -61,6 +61,9 @@ module.exports = {
         'server-action',
         null
       );
+
+      // Without this the helper never settles and every caller hangs forever.
+      return exits.success([fallbackMediasoup]);
     }
   }
 

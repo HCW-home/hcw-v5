@@ -6,6 +6,9 @@ const DEFAULT_INVITATION_TIMEOUT = 24 * 60 * 60 * 1000; // 1 day
 
 const INVITATION_TIMEOUT = parseTime(DELETE_UNUSED_INVITE_AFTER, DEFAULT_INVITATION_TIMEOUT);
 const TRANSLATION_REQUEST_TIMEOUT = 48 * 60 * 60 * 1000;
+// Call timeouts, enforced by the cron jobs defined in startCron().
+const RINGING_TIMEOUT = 5 * 60 * 1000;
+const CALL_DURATION_TIMEOUT = 2 * 60 * 60 * 1000;
 
 const inviteJobs = {
   FIRST_INVITE_REMINDER_SMS: async (invite) => {
@@ -408,21 +411,44 @@ module.exports = {
       }
     });
 
-    defineJob('RINGING_TIMEOUT', '*/5 * * * *', async () => {
-      const jobs = await sails.models.message.find({ status: 'ringing' });
-      for (const job of jobs) {
-        await sails.models.message.endCall(job, job.consultation, 'RINGING_TIMEOUT');
-        sails.config.customLogger.log('info', `Call ended due to RINGING_TIMEOUT messageId ${job.id}`, null, 'server-action',null);
-      }
-    });
+    // Both call timeouts used to run through defineJob() with no age predicate at
+    // all: every message that was not already 'ended' was terminated on each tick.
+    // They are plain cron jobs now, and they filter on createdAt (a numeric
+    // autoCreatedAt timestamp); acceptedAt is declared as a number but written as
+    // a Date, so it is not a dependable predicate.
+    const endStaleCalls = async (status, maxAge, reason) => {
+      const cutoff = Date.now() - maxAge;
+      const messages = await sails.models.message.find({
+        status,
+        createdAt: { '<': cutoff },
+      });
 
-    defineJob('DURATION_TIMEOUT', '*/5 * * * *', async () => {
-      const jobs = await sails.models.message.find({ status: { '!=': 'ended' } });
-      for (const job of jobs) {
-        await sails.models.message.endCall(job, job.consultation, 'DURATION_TIMEOUT');
-        sails.config.customLogger.log('info', `Call ended due to DURATION_TIMEOUT messageId ${job.id}`, null, 'server-action', null);
+      for (const message of messages) {
+        const consultation = await sails.models.consultation.findOne({ id: message.consultation });
+
+        if (!consultation) {
+          sails.config.customLogger.log('warn', `${reason}: consultation ${message.consultation} not found for message ${message.id}`, null, 'server-action', null);
+          continue;
+        }
+
+        // endCall() needs the consultation record, not its id: called with a plain
+        // id it marked the call ended without notifying a single participant.
+        await sails.models.message.endCall(message, consultation, reason);
+        sails.config.customLogger.log('info', `Call ended due to ${reason} messageId ${message.id}`, null, 'server-action', null);
       }
-    });
+    };
+
+    const ringingTimeoutJob = new CronJob('*/5 * * * *', async () => {
+      await endStaleCalls('ringing', RINGING_TIMEOUT, 'RINGING_TIMEOUT');
+    }, null, true);
+    ringingTimeoutJob.start();
+    sails.config.customLogger.log('info', 'Cron job \'RINGING_TIMEOUT\' scheduled', null, 'message', null);
+
+    const durationTimeoutJob = new CronJob('*/5 * * * *', async () => {
+      await endStaleCalls('ongoing', CALL_DURATION_TIMEOUT, 'DURATION_TIMEOUT');
+    }, null, true);
+    durationTimeoutJob.start();
+    sails.config.customLogger.log('info', 'Cron job \'DURATION_TIMEOUT\' scheduled', null, 'message', null);
 
     const deleteOldInvites = CronJob.from({
       cronTime: '*/5 * * * *',

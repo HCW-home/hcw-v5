@@ -1,5 +1,5 @@
 import { Injectable, Injector } from '@angular/core'
-import { Observable, Subject } from 'rxjs'
+import { Subject } from 'rxjs'
 import { environment } from '../../environments/environment'
 
 import { Router } from '@angular/router'
@@ -17,6 +17,21 @@ export class SocketEventsService {
   private connection: Subject<String> = new Subject()
   public consultationClosedSubj: Subject<any> = new Subject()
   private user: any = null;
+
+  // Long-lived subjects: subscribers keep them across socket rebuilds.
+  private newConsultationSubj: Subject<any> = new Subject()
+  private ownershipTransferredSubj: Subject<any> = new Subject()
+  private messageSubj: Subject<any> = new Subject()
+  private onlineStatusChangeSubj: Subject<any> = new Subject()
+  private newCallSubj: Subject<any> = new Subject()
+  private rejectCallSubj: Subject<any> = new Subject()
+  private acceptCallSubj: Subject<any> = new Subject()
+  private consultationAcceptedSubj: Subject<any> = new Subject()
+  private consultationCanceledSubj: Subject<any> = new Subject()
+  private endCallSubj: Subject<any> = new Subject()
+  private consultationUpdatedSubj: Subject<any> = new Subject()
+  // Reset whenever a new socket instance is created.
+  private listenersBound = false;
 
   constructor(private router: Router, private injector: Injector) { }
 
@@ -54,6 +69,20 @@ export class SocketEventsService {
 
     this.user = currentUser;
 
+    // Drop the previous socket first. Leaving it open (init() is called again on
+    // every token refresh) made the backend broadcast a spurious offline status
+    // when it finally timed out, and kept handlers bound to a socket nobody reads.
+    if (this.socket) {
+      try {
+        this.socket.removeAllListeners()
+        this.socket.disconnect()
+      } catch (err) {
+        console.log('error disconnecting previous socket', err)
+      }
+      this.socket = null
+    }
+    this.listenersBound = false
+
     this.socket = io(environment.host, {
       reconnection: true,
       reconnectionDelay: 1000,
@@ -74,6 +103,8 @@ export class SocketEventsService {
     });
 
     (window as any).socket = this.socket
+
+    this.bindSocketEvents()
 
     // window.socket
     this.socket.on(
@@ -184,152 +215,95 @@ export class SocketEventsService {
   }
 
   onConsultation(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('newConsultation', (e) => {
-        console.info('new consultation', e)
-        this.playAudio()
-        observer.next(e)
-      })
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.newConsultationSubj
   }
 
   onConsultationClosed(): Subject<any> {
-
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('consultationClosed', (e) => {
-        console.info('consultation closed ........', e)
-        observer.next(e)
-      })
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.consultationClosedSubj
   }
 
   onOwnershipTransferred(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('ownershipTransferred', (e) => {
-        console.info('ownership transferred', e)
-        observer.next(e)
-      })
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.ownershipTransferredSubj
   }
 
   onMessage(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('newMessage', (e) => {
-        console.info('new mesg ', e)
-          if ((e.data.type === 'text' || e.data.type === 'attachment')) {
-              const audio = new Audio('assets/sounds/new-message.mp3');
-              audio.play().catch(err => console.log('Audio play failed:', err));
-          }
-        observer.next(e)
-      })
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.messageSubj
   }
 
   onOnlineStatusChange(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('onlineStatusChange', (e) => {
-        console.info('online status change')
-        console.info('e :: ', e)
-        observer.next(e)
-      })
-
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.onlineStatusChangeSubj
   }
 
   onCall(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('newCall', (e) => {
-        console.info('End call ', e)
-        observer.next(e)
-      })
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.newCallSubj
   }
 
   onRejectCall(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-
-      this.socket.on('rejectCall', (e) => observer.next(e))
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.rejectCallSubj
   }
 
-  onAcceptCall() {
-    const obs = Observable.create((observer) => {
-      this.socket.on('acceptCall', (e) => {
-        console.info('Accepted Call EVENT >>>>>>>>>>>>>>>>>>>>>>>>>>>>> ', e)
-        observer.next(e)
-      })
-    })
-
-    return obs
+  onAcceptCall(): Subject<any> {
+    return this.acceptCallSubj
   }
 
-  onConsultationAccepted() {
-    const obs = Observable.create((observer) => {
-      this.socket.on('consultationAccepted', (e) => {
-        console.info('consultation accepted')
-        observer.next(e)
-      })
-    })
-
-    return obs
+  onConsultationAccepted(): Subject<any> {
+    return this.consultationAcceptedSubj
   }
 
-  onConsultationCanceled() {
-    const obs = Observable.create((observer) => {
-      this.socket.on('consultationCanceled', (e) => {
-        console.info('consultation canceled')
-        observer.next(e)
-      })
-    })
-
-    return obs
+  onConsultationCanceled(): Subject<any> {
+    return this.consultationCanceledSubj
   }
 
   onEndCall(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      console.info('end call event')
-      this.socket.on('endCall', (e) => {
-        console.info('new call ', e)
-        observer.next(e)
-      })
-    })
-    obs.subscribe(sub)
-    return sub
+    return this.endCallSubj
   }
 
   onConsultationUpdated(): Subject<any> {
-    const sub = new Subject()
-    const obs = Observable.create((observer) => {
-      this.socket.on('consultationUpdated', (e) => {
-        console.info('a consultation have been updated', e)
+    return this.consultationUpdatedSubj
+  }
 
-        observer.next(e)
-      })
+  // Handlers live on the socket instance, and init() builds a brand new one on
+  // every token refresh. Callers keep their subscription to the long-lived
+  // subjects above, and this rebinds those subjects onto the current socket, so a
+  // refresh mid-call no longer silently stops newCall/endCall/newMessage.
+  private bindSocketEvents() {
+    if (this.listenersBound) {
+      return
+    }
+    this.listenersBound = true
+
+    this.socket.on('newConsultation', (e) => {
+      this.playAudio()
+      this.newConsultationSubj.next(e)
     })
-    obs.subscribe(sub)
-    return sub
+
+    this.socket.on('consultationClosed', (e) => this.consultationClosedSubj.next(e))
+
+    this.socket.on('ownershipTransferred', (e) => this.ownershipTransferredSubj.next(e))
+
+    this.socket.on('newMessage', (e) => {
+      if (e.data.type === 'text' || e.data.type === 'attachment') {
+        const audio = new Audio('assets/sounds/new-message.mp3')
+        audio.play().catch(err => console.log('Audio play failed:', err))
+      }
+      this.messageSubj.next(e)
+    })
+
+    this.socket.on('onlineStatusChange', (e) => this.onlineStatusChangeSubj.next(e))
+
+    this.socket.on('newCall', (e) => this.newCallSubj.next(e))
+
+    this.socket.on('rejectCall', (e) => this.rejectCallSubj.next(e))
+
+    this.socket.on('acceptCall', (e) => this.acceptCallSubj.next(e))
+
+    this.socket.on('consultationAccepted', (e) => this.consultationAcceptedSubj.next(e))
+
+    this.socket.on('consultationCanceled', (e) => this.consultationCanceledSubj.next(e))
+
+    this.socket.on('endCall', (e) => this.endCallSubj.next(e))
+
+    this.socket.on('consultationUpdated', (e) => this.consultationUpdatedSubj.next(e))
   }
 
   playAudio() {

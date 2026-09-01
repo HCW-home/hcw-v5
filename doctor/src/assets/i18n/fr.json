@@ -103,6 +103,7 @@
         "participant": "Participant(e)"
     },
     "consultation": {
+        "reconnecting": "Reconnexion au serveur vidéo...",
         "expert_link": "Lien de l'expert",
         "start": "COMMENCER",
         "aCall": "UN APPEL",

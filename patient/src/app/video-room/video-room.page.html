@@ -80,11 +80,10 @@
 
       <!-- Remotes -->
       <div
-        *ngFor="let user of this.remoteUsers"
-        class="OT_root OT_publisher OT_remote custom-class OV_big"
-        id="remoteUsers"
+        *ngFor="let user of this.remoteUsers; trackBy: trackByPeerId"
+        class="OT_root OT_publisher OT_remote custom-class OV_big remote-user"
       >
-        <ng-container *ngFor="let stream of user.streams">
+        <ng-container *ngFor="let stream of user.streams; trackBy: trackByStreamId">
           <app-peer-video
             *ngIf="stream.kind  === 'video'"
             [stream]="stream"

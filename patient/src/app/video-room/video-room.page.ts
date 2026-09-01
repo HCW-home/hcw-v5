@@ -226,6 +226,7 @@ export class VideoRoomPage implements OnInit, OnDestroy {
     this.accepted = true;
 
     this.remoteUsers = [];
+    this.reconnecting = false;
     NativeAudio.stop({assetId: 'ringSound'}).then();
 
     this.roomService.init({ peerId: this.peerId });
@@ -236,6 +237,31 @@ export class VideoRoomPage implements OnInit, OnDestroy {
       joinAudio: true,
       token: this.token,
     });
+
+    const signalingService = (this.roomService as any).signalingService;
+    if (signalingService?.onReconnecting) {
+      this.subscriptions.push(
+        signalingService.onReconnecting.subscribe(() => {
+          // Transient drop: socket.io retries and the room rejoins itself. Show
+          // the state instead of leaving a frozen screen, and never hang up here.
+          this.reconnecting = true;
+        })
+      );
+    }
+    if (signalingService?.onReconnected) {
+      this.subscriptions.push(
+        signalingService.onReconnected.subscribe(() => {
+          this.reconnecting = false;
+        })
+      );
+    }
+    if (signalingService?.onDisconnected) {
+      this.subscriptions.push(
+        signalingService.onDisconnected.subscribe(() => {
+          this.reconnecting = false;
+        })
+      );
+    }
 
     this.subscriptions.push(
       this.roomService.onCamProducing.subscribe((stream) => {
@@ -325,6 +351,14 @@ export class VideoRoomPage implements OnInit, OnDestroy {
     } else {
       this.rejectCall();
     }
+  }
+
+  trackByPeerId(index: number, user) {
+    return user?.id ?? index;
+  }
+
+  trackByStreamId(index: number, stream) {
+    return stream?.streamId ?? index;
   }
 
   resetVideoSize() {

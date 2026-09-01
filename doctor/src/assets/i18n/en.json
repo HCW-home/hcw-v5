@@ -123,6 +123,7 @@
     "closedBy": "Closed by"
   },
   "consultation": {
+    "reconnecting": "Reconnecting to video server...",
     "start": "START",
     "aCall": "A CALL",
     "anotherDoctorInCall": "Another doctor is currently in a call",

@@ -21,30 +21,32 @@ export class PeerVideoComponent implements AfterViewInit, OnDestroy, OnChanges {
   @Input() stream: Stream;
 
   subscriptions: Subscription[] = [];
+  private retryTimeout: any;
   constructor(private logger: LogService) {}
 
   ngAfterViewInit() {
     this.updateVideoSrc();
   }
 
-  // ngOnInit(): void {
-  // Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-  // Add 'implements OnInit' to the class.
-  // this.subscriptions.push(this.stream.onLayerChange.subscribe(() => {
-  //   this.logger.debug('ov-vide onlayerchanged.........')
-  //   this.elementRef.nativeElement.srcObject = this.stream.mediaStream
-  // }))
-  // }
-
   ngOnDestroy(): void {
-    // Called once, before the instance is destroyed.
-    // Add 'implements OnDestroy' to the class.
+    clearTimeout(this.retryTimeout);
     this.subscriptions.forEach((s) => s.unsubscribe());
+    this.subscriptions = [];
   }
 
   ngOnChanges(changes) {
     if (changes.stream) {
       this.stream = changes.stream.currentValue;
+      this.subscriptions.forEach((s) => s.unsubscribe());
+      this.subscriptions = [];
+      // The Stream object is reused when a peer republishes (camera toggle,
+      // reconnection), so ngOnChanges will not fire again for it. Follow the
+      // stream itself to re-attach the new MediaStream.
+      if (this.stream) {
+        this.subscriptions.push(
+          this.stream.onLayerChange.subscribe(() => this.updateVideoSrc())
+        );
+      }
       this.updateVideoSrc();
     }
   }
@@ -53,8 +55,9 @@ export class PeerVideoComponent implements AfterViewInit, OnDestroy, OnChanges {
     if (this.elementRef && this.stream) {
       this.elementRef.nativeElement.srcObject = this.stream.mediaStream;
     }
-    setTimeout(() => {
-      if (this.elementRef) {
+    clearTimeout(this.retryTimeout);
+    this.retryTimeout = setTimeout(() => {
+      if (this.elementRef && this.stream) {
         this.elementRef.nativeElement.srcObject = this.stream.mediaStream;
       }
     }, 500);

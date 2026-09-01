@@ -103,6 +103,7 @@
         "exportButton": "Експорт"
     },
     "consultation": {
+        "reconnecting": "Перепідключення до відеосервера...",
         "start": "ПОЧАТОК",
         "aCall": "ДЗВІНОК",
         "joinVideoCall": "Приєднатися до відео",
