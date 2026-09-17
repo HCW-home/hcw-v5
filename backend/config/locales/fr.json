@@ -74,6 +74,7 @@
 	"forgot password email": "Vous nous avez indiqué que vous avez oublié votre mot de passe. Merci de cliquer sur le lien suivant afin de changer votre mot de passe %(url)s . Ce lien ne fonctionnera que 5 minutes.",
 	"consultation link": "Lien de consultation",
 	"invite error": "Erreur pendant l'envoi de l'invitation",
+	"invite whatsapp number rejected": "L'invitation n'a pas pu être envoyée par WhatsApp au numéro %(phoneNumber)s. Ce numéro ne peut pas recevoir de messages WhatsApp depuis la plateforme (numéro invalide ou bloqué, ou pays non pris en charge). Veuillez utiliser un autre moyen de contact.",
 	"consultation branding": "Consultation %(branding)s",
 	"consultation past time": "L'heure de la consultation ne peut pas être dans le passé",
 	"minute": "minute",

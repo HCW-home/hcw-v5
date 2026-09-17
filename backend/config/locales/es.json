@@ -74,6 +74,7 @@
     "forgot password email": "Ha solicitado restablecer su contraseña. Haga clic en el enlace siguiente para cambiar su contraseña %(url)s. Este enlace funcionará solo durante 5 minutos.",
     "consultation link": "Enlace de consulta",
     "invite error": "Error al enviar la invitación",
+    "invite whatsapp number rejected": "No se ha podido enviar la invitación por WhatsApp al número %(phoneNumber)s. Este número no puede recibir mensajes de WhatsApp desde la plataforma (número no válido o bloqueado, o país no admitido). Utilice otro medio de contacto.",
     "consultation branding": "Consulta %(branding)s",
     "consultation past time": "El tiempo de consulta no puede ser pasado",
     "minute": "minuto",

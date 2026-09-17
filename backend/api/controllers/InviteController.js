@@ -408,6 +408,12 @@ module.exports = {
     } catch (error) {
       sails.config.customLogger.log('error', 'Error sending invite', { error: error.message, inviteId: invite.id, uid: req.user.id }, 'server-action', req.user.id);
       await PublicInvite.destroyOne({ id: invite.id });
+      if (error.name === 'WHATSAPP_RECIPIENT_REJECTED') {
+        return res.status(400).json({
+          error: true,
+          message: sails._t(locale, 'invite whatsapp number rejected', { phoneNumber: error.phoneNumber }),
+        });
+      }
       return res.status(500).json({
         error: true,
         message: error?.message || sails._t(doctorLanguage, 'invite error'),
@@ -810,6 +816,12 @@ module.exports = {
       }
     } catch (error) {
       sails.config.customLogger.log('error', 'Error sending invite', { error: error.message, inviteId: invite.id, uid: req.user.id }, 'server-action', req.user?.id);
+      if (error.name === 'WHATSAPP_RECIPIENT_REJECTED') {
+        return res.status(400).json({
+          error: true,
+          message: sails._t(req.headers.locale, 'invite whatsapp number rejected', { phoneNumber: error.phoneNumber }),
+        });
+      }
       return res.status(500).json({
         error: true,
         message: 'Error sending Invite',

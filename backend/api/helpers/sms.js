@@ -1,6 +1,10 @@
 const https = require('https');
 const { cleanPhoneNumberForTwilio } = require('../utils/helpers');
 
+// Twilio error codes returned when the recipient cannot receive the message
+// (invalid number, country blocked by Twilio/Meta like +963, opted-out recipient...)
+const TWILIO_RECIPIENT_ERROR_CODES = [21211, 21408, 21610, 21612, 21614, 63024, 63058];
+
 function sendSmsWithOvh(phoneNumber, message) {
   phoneNumber = phoneNumber.replace(/^00/, '+');
   const ovhConfig = {
@@ -175,7 +179,11 @@ async function sendSmsWithTwilioWhatsapp(phoneNumber, message, contentSid, conte
     sails.config.customLogger.log('info', `TWILIO_WHATSAPP message sent messageSid is ${messageResponse.sid}`, null, 'server-action', null);
     return messageResponse.sid;
   } catch (error) {
-    sails.config.customLogger.log('error', 'Error sending TWILIO_WHATSAPP message', { error: error.message }, 'server-action', null);
+    sails.config.customLogger.log('error', 'Error sending TWILIO_WHATSAPP message', { error: error.message, code: error.code }, 'server-action', null);
+    if (TWILIO_RECIPIENT_ERROR_CODES.includes(error.code)) {
+      error.name = 'WHATSAPP_RECIPIENT_REJECTED';
+      error.phoneNumber = phoneNumber;
+    }
     throw error;
   }
 }

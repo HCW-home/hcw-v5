@@ -74,6 +74,7 @@
 	"forgot password email": "Դուք խնդրել եք վերականգնել ձեր գաղտնաբառը: Խնդրում ենք սեղմել հետևյալ հղմանը՝ գաղտնաբառը փոխելու համար %(url)s: Այս հղումը վավեր կլինի միայն 5 րոպե:",
 	"consultation link": "Խորհրդակցության հղում",
 	"invite error": "Հրավերը ուղարկելու սխալ",
+	"invite whatsapp number rejected": "The invitation could not be sent by WhatsApp to %(phoneNumber)s. This number cannot receive WhatsApp messages from the platform (invalid or blocked number, or unsupported country). Please use another contact method.",
 	"consultation branding": "Խորհրդակցություն %(branding)s",
 	"consultation past time": "Խորհրդակցության ժամանակը չի կարող լինել անցյալում",
 	"minute": "րոպե",

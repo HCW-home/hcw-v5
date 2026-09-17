@@ -74,6 +74,7 @@
 	"forgot password email": "Sie haben ein Passwort zurücksetzen angefordert. Bitte klicken Sie auf den Link unten, um Ihr Passwort zu ändern %(url)s . Dieser Link ist nur für 5 Minuten gültig.",
 	"consultation link": "Konsultationslink",
 	"invite error": "Fehler beim Senden der Einladung",
+	"invite whatsapp number rejected": "Die Einladung konnte nicht per WhatsApp an die Nummer %(phoneNumber)s gesendet werden. Diese Nummer kann keine WhatsApp-Nachrichten von der Plattform empfangen (ungültige oder gesperrte Nummer oder nicht unterstütztes Land). Bitte verwenden Sie eine andere Kontaktmöglichkeit.",
 	"consultation branding": "Beratung %(branding)s",
 	"consultation past time": "Die Konsultationszeit darf nicht in der Vergangenheit liegen",
 	"minute": "Minute",

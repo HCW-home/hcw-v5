@@ -74,6 +74,7 @@
 	"forgot password email": "Вы запросили сброс пароля. Пожалуйста, нажмите на ссылку ниже, чтобы изменить свой пароль %(url)s. Эта ссылка будет работать всего 5 минут.",
 	"consultation link": "Ссылка на консультацию",
 	"invite error": "Error sending Invite",
+	"invite whatsapp number rejected": "Не удалось отправить приглашение через WhatsApp на номер %(phoneNumber)s. Этот номер не может получать сообщения WhatsApp с платформы (номер недействителен или заблокирован, либо страна не поддерживается). Пожалуйста, используйте другой способ связи.",
 	"consultation branding": "Консультация %(branding)s",
 	"consultation past time": "Consultation Time cannot be in the past",
 	"minute": "minute",

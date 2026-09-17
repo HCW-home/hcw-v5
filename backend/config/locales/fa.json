@@ -74,6 +74,7 @@
 	"forgot password email": "شما درخواست بازنشانی رمز عبور خود را کرده اید. لطفا روی لینک زیر کلیک کنید تا رمز عبور خود را تغییر دهید %(url)s. این لینک فقط برای 5 دقیقه کار خواهد کرد.",
 	"consultation link": "لینک مشاوره",
 	"invite error": "خطا در ارسال دعوت",
+	"invite whatsapp number rejected": "The invitation could not be sent by WhatsApp to %(phoneNumber)s. This number cannot receive WhatsApp messages from the platform (invalid or blocked number, or unsupported country). Please use another contact method.",
 	"consultation branding": "مشاوره %(branding)s",
 	"consultation past time": "زمان مشاوره نمی تواند در گذشته باشد",
 	"minute": "دقیقه",
