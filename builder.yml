@@ -1,6 +1,6 @@
 flows:
 - deb
-- podman-compose
+- docker-compose
 - publish-github
 - sonar
 options:
