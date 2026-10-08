@@ -75,6 +75,8 @@
 	"consultation link": "لینک مشاوره",
 	"invite error": "خطا در ارسال دعوت",
 	"invite whatsapp number rejected": "The invitation could not be sent by WhatsApp to %(phoneNumber)s. This number cannot receive WhatsApp messages from the platform (invalid or blocked number, or unsupported country). Please use another contact method.",
+	"invite sms sending failed": "The invitation could not be sent by SMS to %(phoneNumber)s. Please check the number or use another contact method.",
+	"invite whatsapp sending failed": "The invitation could not be sent by WhatsApp to %(phoneNumber)s. Please try again later or use another contact method.",
 	"consultation branding": "مشاوره %(branding)s",
 	"consultation past time": "زمان مشاوره نمی تواند در گذشته باشد",
 	"minute": "دقیقه",

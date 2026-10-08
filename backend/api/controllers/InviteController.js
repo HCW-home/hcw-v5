@@ -3,7 +3,7 @@ const { ObjectId } = require('mongodb');
 
 const moment = require('moment-timezone');
 const { i18n } = require('../../config/i18n');
-const { escapeHtml, sanitizeMetadata } = require('../utils/helpers');
+const { escapeHtml, sanitizeMetadata, getDeliveryErrorMessage } = require('../utils/helpers');
 
 const DEFAULT_REQUIRED_FIELDS = ['firstName', 'lastName', 'gender'];
 
@@ -406,12 +406,13 @@ module.exports = {
         sails.config.customLogger.log('info', `Expert invites sent inviteId ${invite.id}`, null, 'server-action', req.user.id);
       }
     } catch (error) {
-      sails.config.customLogger.log('error', 'Error sending invite', { error: error.message, inviteId: invite.id, uid: req.user.id }, 'server-action', req.user.id);
+      sails.config.customLogger.log('error', 'Error sending invite', { error: error?.message, inviteId: invite.id, uid: req.user.id }, 'server-action', req.user.id);
       await PublicInvite.destroyOne({ id: invite.id });
-      if (error.name === 'WHATSAPP_RECIPIENT_REJECTED') {
+      const deliveryErrorMessage = getDeliveryErrorMessage(error, locale);
+      if (deliveryErrorMessage) {
         return res.status(400).json({
           error: true,
-          message: sails._t(locale, 'invite whatsapp number rejected', { phoneNumber: error.phoneNumber }),
+          message: deliveryErrorMessage,
         });
       }
       return res.status(500).json({
@@ -815,11 +816,12 @@ module.exports = {
         sails.config.customLogger.log('info', `Expert invites sent inviteId ${invite.id}`, null, 'server-action', req.user.id);
       }
     } catch (error) {
-      sails.config.customLogger.log('error', 'Error sending invite', { error: error.message, inviteId: invite.id, uid: req.user.id }, 'server-action', req.user?.id);
-      if (error.name === 'WHATSAPP_RECIPIENT_REJECTED') {
+      sails.config.customLogger.log('error', 'Error sending invite', { error: error?.message, inviteId: invite.id, uid: req.user.id }, 'server-action', req.user?.id);
+      const deliveryErrorMessage = getDeliveryErrorMessage(error, req.headers.locale);
+      if (deliveryErrorMessage) {
         return res.status(400).json({
           error: true,
-          message: sails._t(req.headers.locale, 'invite whatsapp number rejected', { phoneNumber: error.phoneNumber }),
+          message: deliveryErrorMessage,
         });
       }
       return res.status(500).json({

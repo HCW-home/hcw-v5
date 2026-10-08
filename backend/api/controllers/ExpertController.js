@@ -1,3 +1,5 @@
+const { getDeliveryErrorMessage } = require('../utils/helpers');
+
 module.exports = {
   sendExpertLink: async function(req, res) {
     try {
@@ -76,6 +78,10 @@ module.exports = {
       }
     } catch (error) {
       sails.config.customLogger.log('error', 'Error sending message', { error: error?.message || error }, null, 'server-action', req.user?.id);
+      const deliveryErrorMessage = getDeliveryErrorMessage(error, req.headers?.locale);
+      if (deliveryErrorMessage) {
+        return res.badRequest({ message: deliveryErrorMessage });
+      }
       return res.serverError({ message: 'Error sending message' });
     }
   },

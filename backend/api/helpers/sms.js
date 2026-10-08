@@ -5,6 +5,14 @@ const { cleanPhoneNumberForTwilio } = require('../utils/helpers');
 // (invalid number, country blocked by Twilio/Meta like +963, opted-out recipient...)
 const TWILIO_RECIPIENT_ERROR_CODES = [21211, 21408, 21610, 21612, 21614, 63024, 63058];
 
+// Error carrying the recipient, so callers can answer with a clear message instead of a 500
+function smsSendingFailedError(phoneNumber, message) {
+  const error = new Error(message);
+  error.name = 'SMS_SENDING_FAILED';
+  error.phoneNumber = phoneNumber;
+  return error;
+}
+
 function sendSmsWithOvh(phoneNumber, message) {
   phoneNumber = phoneNumber.replace(/^00/, '+');
   const ovhConfig = {
@@ -180,10 +188,10 @@ async function sendSmsWithTwilioWhatsapp(phoneNumber, message, contentSid, conte
     return messageResponse.sid;
   } catch (error) {
     sails.config.customLogger.log('error', 'Error sending TWILIO_WHATSAPP message', { error: error.message, code: error.code }, 'server-action', null);
-    if (TWILIO_RECIPIENT_ERROR_CODES.includes(error.code)) {
-      error.name = 'WHATSAPP_RECIPIENT_REJECTED';
-      error.phoneNumber = phoneNumber;
-    }
+    error.name = TWILIO_RECIPIENT_ERROR_CODES.includes(error.code)
+      ? 'WHATSAPP_RECIPIENT_REJECTED'
+      : 'WHATSAPP_SENDING_FAILED';
+    error.phoneNumber = phoneNumber;
     throw error;
   }
 }
@@ -484,7 +492,7 @@ module.exports = {
                   await sendSmsWithOdoo(phoneNumber, message, senderEmail);
                 } catch (odooError) {
                   sails.config.customLogger.log('error', 'Failed to send SMS through Odoo', { error: odooError.message }, 'server-action');
-                  return exits.error(new Error(odooError.message));
+                  return exits.error(smsSendingFailedError(phoneNumber, odooError.message));
                 }
                 break;
               default:
@@ -504,7 +512,7 @@ module.exports = {
         }
       }
       sails.config.customLogger.log('error', 'No SMS provider succeeded or phone number not whitelisted', null, 'message');
-      return exits.error(new Error('SMS sending failed'));
+      return exits.error(smsSendingFailedError(phoneNumber, 'SMS sending failed'));
     } catch (error) {
       sails.config.customLogger.log('error', 'Unexpected error in SMS action', { error: error?.message || error }, 'server-action');
       return exits.error(error);

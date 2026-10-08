@@ -104,10 +104,24 @@ function cleanPhoneNumberForTwilio(number) {
   return cleaned;
 }
 
+// Delivery errors raised by the sms helper, with the key of their translated message
+const DELIVERY_ERROR_MESSAGE_KEYS = new Map([
+  ['WHATSAPP_RECIPIENT_REJECTED', 'invite whatsapp number rejected'],
+  ['WHATSAPP_SENDING_FAILED', 'invite whatsapp sending failed'],
+  ['SMS_SENDING_FAILED', 'invite sms sending failed'],
+]);
+
+// Translated message for a delivery error raised by the sms helper, null for any other error
+function getDeliveryErrorMessage(error, locale) {
+  const key = DELIVERY_ERROR_MESSAGE_KEYS.get(error?.name);
+  return key ? sails._t(locale, key, { phoneNumber: error.phoneNumber }) : null;
+}
+
 module.exports = {
   parseTime,
   escapeHtml,
   sanitizeMetadata,
   recreateTTLIndex,
-  cleanPhoneNumberForTwilio
+  cleanPhoneNumberForTwilio,
+  getDeliveryErrorMessage
 };

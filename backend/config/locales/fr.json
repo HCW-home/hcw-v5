@@ -75,6 +75,8 @@
 	"consultation link": "Lien de consultation",
 	"invite error": "Erreur pendant l'envoi de l'invitation",
 	"invite whatsapp number rejected": "L'invitation n'a pas pu être envoyée par WhatsApp au numéro %(phoneNumber)s. Ce numéro ne peut pas recevoir de messages WhatsApp depuis la plateforme (numéro invalide ou bloqué, ou pays non pris en charge). Veuillez utiliser un autre moyen de contact.",
+	"invite sms sending failed": "L'invitation n'a pas pu être envoyée par SMS au numéro %(phoneNumber)s. Veuillez vérifier le numéro ou utiliser un autre moyen de contact.",
+	"invite whatsapp sending failed": "L'invitation n'a pas pu être envoyée par WhatsApp au numéro %(phoneNumber)s. Veuillez réessayer plus tard ou utiliser un autre moyen de contact.",
 	"consultation branding": "Consultation %(branding)s",
 	"consultation past time": "L'heure de la consultation ne peut pas être dans le passé",
 	"minute": "minute",

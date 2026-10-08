@@ -22,15 +22,18 @@ async function determineStatus(phoneNumber, smsProviders, whatsappConfig) {
 
       const prefixMatches = prefixList.includes('*') || prefixList.some(prefix => prefix && phoneNumber.startsWith(prefix));
       if (prefixMatches) {
-        const whatsappTemplate = await WhatsappTemplate.findOne({
-          language: whatsappConfig?.language,
-          approvalStatus: 'approved',
-          key: whatsappConfig?.type,
-          sid: { '!=': null },
-        });
-
-        if (provider.provider.includes('WHATSAPP') && whatsappTemplate) {
-          canSendWhatsApp = true;
+        if (provider.provider.includes('WHATSAPP')) {
+          // A WhatsApp provider without approved template must not be counted as an SMS provider,
+          // otherwise the invite is announced by SMS while no SMS provider can send it
+          const whatsappTemplate = await WhatsappTemplate.findOne({
+            language: whatsappConfig?.language,
+            approvalStatus: 'approved',
+            key: whatsappConfig?.type,
+            sid: { '!=': null },
+          });
+          if (whatsappTemplate) {
+            canSendWhatsApp = true;
+          }
         } else {
           canSendSMS = true;
         }
@@ -546,7 +549,9 @@ module.exports = {
   checkPrefix: async function(req, res) {
     const type = req.param('type');
     const language = req.param('language') || 'en';
-    const phoneNumber = validator.escape(req.param('phoneNumber')).trim();
+    const rawPhoneNumber = req.param('phoneNumber');
+    // validator.escape throws on non string values
+    const phoneNumber = typeof rawPhoneNumber === 'string' ? validator.escape(rawPhoneNumber).trim() : '';
     if (!phoneNumber) {
       return res.badRequest({ message: 'Phone number is required.' });
     }
