@@ -1,4 +1,4 @@
-FROM mirror.gcr.io/library/node:22 AS builder
+FROM mirror.gcr.io/library/node:22.23.4 AS builder
 ENV VERSION=0.5.14
 WORKDIR /usr/src/app
 COPY package*.json yarn.lock ./

@@ -1,4 +1,4 @@
-FROM node:22 AS builder
+FROM node:22.23.4 AS builder
 
 ENV VERSION=0.5.38
 
@@ -17,7 +17,7 @@ COPY public ./public
 COPY views ./views
 COPY cli ./cli
 
-FROM node:22
+FROM node:22.23.4
 
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/ /usr/src/app/

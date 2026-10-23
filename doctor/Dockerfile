@@ -1,4 +1,4 @@
-FROM node:22 AS builder
+FROM node:22.23.4 AS builder
 ENV VERSION=5.3.29
 WORKDIR /usr/src/app
 COPY package*.json yarn.lock ./
