@@ -1,40 +1,7 @@
 <ng-container *ngIf="data.status !== 'ACCEPTED'">
-  <div *ngIf="!myForm" class="invite-type-container" id="invite-type-container">
-    <div class="invite-type-header">
-      <h1 class="d-block" mat-dialog-title>
-        {{ 'inviteForm.sendAnInvitation' | translate }}
-      </h1>
-    </div>
-
-    <div class="invite-type-content">
-      <div class="invite-form interpreter__form">
-        <h4>{{ 'inviteForm.patientTeleConsultation' | translate }}</h4>
-        <p>
-          {{ 'inviteForm.patientTeleConsultationDescription' | translate }}
-        </p>
-        <button
-          [disabled]="loading"
-          (click)="showPatientForm()"
-          color="primary"
-          tourAnchor="{{ TourType.REMOTE_PATIENT_INVITE }}"
-          mat-flat-button>
-          {{ 'inviteForm.invite' | translate }}
-        </button>
-      </div>
-      <div class="invite-form interpreter__form">
-        <h4>{{ 'inviteForm.thirdPartyConsultation' | translate }}</h4>
-        <p>
-          {{ 'inviteForm.thirdPartyConsultationDescription' | translate }}
-        </p>
-        <button
-          [disabled]="loading"
-          (click)="showTierFrom()"
-          color="primary"
-          mat-flat-button>
-          {{ 'inviteForm.invite' | translate }}
-        </button>
-      </div>
-    </div>
+  <!-- Shown while the queues are loaded, before the patient form is built -->
+  <div *ngIf="!myForm" class="loading form-loading">
+    <mat-spinner [diameter]="35"></mat-spinner>
   </div>
 
   <form *ngIf="myForm" [formGroup]="myForm">
@@ -281,6 +248,13 @@
                 }}">
                 {{ 'inviteForm.sendLinkManually' | translate }}
               </mat-checkbox>
+            </div>
+            <div
+              *ngIf="myForm.get('sendLinkManually').value"
+              class="field-container">
+              <small class="send-link-manually-note">
+                {{ 'inviteForm.sendLinkManuallyNote' | translate }}
+              </small>
             </div>
           </ng-container>
 
@@ -605,7 +579,10 @@
             {{ 'inviteForm.update' | translate }}
           </ng-container>
           <ng-container *ngIf="!edit">
-            {{ 'inviteForm.send' | translate }}
+            {{
+              (nothingSentByPlatform ? 'inviteForm.save' : 'inviteForm.send')
+                | translate
+            }}
           </ng-container>
         </button>
       </div>

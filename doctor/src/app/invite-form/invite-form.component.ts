@@ -155,6 +155,17 @@ export class InviteFormComponent implements OnDestroy, OnInit, OnDestroy {
     return this.myForm.get('experts') as FormArray;
   }
 
+  // True when the platform sends no message at all: the patient link is shared
+  // manually and no guest, expert or translator is invited
+  get nothingSentByPlatform(): boolean {
+    return (
+      !!this.myForm?.get('sendLinkManually')?.value &&
+      !this.myForm.get('inviteGuestFormControl')?.value &&
+      !this.myForm.get('inviteExpert')?.value &&
+      !this.inviteTranslator
+    );
+  }
+
   addExpert() {
     this.expertsFormArray.push(
       this.fb.group({
@@ -622,12 +633,10 @@ export class InviteFormComponent implements OnDestroy, OnInit, OnDestroy {
   ngOnInit() {
     this.listenToTourSubscriptions();
 
-    this.dialogRef.updateSize('50%', '50%');
     this.data.doctorLanguage = window.localStorage.getItem('hhw-lang');
 
-    if (this.data.patientContact || this.data.firstName) {
-      this.showPatientForm();
-    }
+    // No invite type selection anymore: always open the patient invitation form
+    this.showPatientForm();
     this.loading = true;
     this.subscriptions.push(
       this.translationOrganizationService
@@ -667,18 +676,9 @@ export class InviteFormComponent implements OnDestroy, OnInit, OnDestroy {
     });
   }
 
-  showTierFrom() {
-    this.isPatientInvite = false;
-    this.dialogRef.updateSize('70%', '83%');
-
-    this.queues = [];
-    this.inviteGuest = true;
-
-    this.createFormGroup();
-  }
-
   showPatientForm() {
     this.isPatientInvite = true;
+    this.dialogRef.updateSize('70%', '83%');
 
     this.loading = true;
     this.getQueuesSub = this.queueServ.getQueues().subscribe(queues => {
@@ -686,7 +686,6 @@ export class InviteFormComponent implements OnDestroy, OnInit, OnDestroy {
       this.queues = queues;
 
       this.createFormGroup();
-      this.dialogRef.updateSize('70%', '83%');
     });
   }
 
@@ -960,29 +959,11 @@ export class InviteFormComponent implements OnDestroy, OnInit, OnDestroy {
           events.name === EventName.StepHide &&
           value &&
           value.step &&
-          value.step.anchorId === TourType.REMOTE_PATIENT_INVITE &&
-          value.direction === Direction.Forwards
-        ) {
-          this.showPatientForm();
-        }
-        if (
-          events.name === EventName.StepHide &&
-          value &&
-          value.step &&
-          value.step.anchorId === TourType.REMOTE_PATIENT_INVITE &&
-          value.direction === Direction.Backwards
-        ) {
-          this.onNoClick();
-        }
-        if (
-          events.name === EventName.StepHide &&
-          value &&
-          value.step &&
           value.step.anchorId === TourType.INVITE_FORM_CONTACT_INPUT &&
           value.direction === Direction.Backwards
         ) {
-          this.isPatientInvite = false;
-          this.myForm = null;
+          // The previous step is the "New invite" button, behind this dialog
+          this.onNoClick();
         }
         if (
           events.name === EventName.StepHide &&

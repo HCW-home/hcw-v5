@@ -152,6 +152,7 @@
         "cancel": "Cancelar",
         "update": "Actualizar",
         "send": "Enviar",
+        "save": "Guardar",
         "pleaseChooseAWaitingQueue": "Por favor, seleccione la fila",
         "patient": "Paciente",
         "thirdParty": "Tercero",
@@ -332,6 +333,7 @@
         "patientTeleConsultationDescription": "Envíe un enlace de invitación a un paciente para realizar una teleconsulta. También puede enviar una invitación a un intérprete, familiar u otro cuidador",
         "lastNameIsRequired": "El apellido es <strong>obligatorio</strong>",
         "sendLinkManually": "Quiero enviar el enlace manualmente",
+        "sendLinkManuallyNote": "El enlace se mostrará al guardar el formulario.",
         "pleaseEnterValidEmailOrPhoneNumber": "Por favor, introduzca un correo electrónico o número de teléfono móvil en el formato +41 o +33",
         "warningTranslatorMightBeLate": "El intérprete podrá responder desde un lugar menos adecuado si la solicitud se realiza con menos de 24 horas de antelación.",
         "patientInvitationWillBeAfterTranslatorIsValidated": "No se enviará ninguna invitación al paciente ni a sus familiares hasta que un intérprete haya validado la invitación."

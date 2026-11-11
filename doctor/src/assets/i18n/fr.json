@@ -190,6 +190,7 @@
         "cancel": "Annuler",
         "update": "Mettre à jour",
         "send": "Envoyer",
+        "save": "Sauvegarder",
         "pleaseChooseAWaitingQueue": "Veuillez choisir la file d'attente",
         "patient": "Patient",
         "thirdParty": "Tiers",
@@ -226,6 +227,7 @@
         "selectTimezone": "Sélectionner le fuseau horaire",
         "chooseDate": "Choisissez une date",
         "sendLinkManually": "Je veux envoyer le lien manuellement",
+        "sendLinkManuallyNote": "Le lien s'affichera à la sauvegarde du formulaire.",
         "uk": "Ukrainien",
         "linkSent": "Invitation envoyée"
     },

@@ -289,8 +289,6 @@ export class AppComponent implements OnInit, OnDestroy {
           'tour.invitesMenuContent',
           'tour.newInviteButtonTitle',
           'tour.newInviteButtonContent',
-          'tour.remotePatientInviteTitle',
-          'tour.remotePatientInviteContent',
           'tour.inviteFormContactInputTitle',
           'tour.inviteFormContactInputContent',
           'tour.inviteFormSendLinkManuallyTitle',
@@ -324,19 +322,6 @@ export class AppComponent implements OnInit, OnDestroy {
                   anchorId: TourType.NEW_INVITE_BUTTON,
                   title: translations['tour.newInviteButtonTitle'],
                   content: translations['tour.newInviteButtonContent'],
-                },
-                {
-                  anchorId: TourType.REMOTE_PATIENT_INVITE,
-                  isAsync: true,
-                  title: translations['tour.remotePatientInviteTitle'],
-                  content: translations['tour.remotePatientInviteContent'],
-                  placement: { xPosition: 'before', yPosition: 'below' },
-                  backdropConfig: {
-                    zIndex: '2000',
-                  },
-                  stepDimensions: {
-                    minWidth: '300px'
-                  }
                 },
                 {
                   anchorId: TourType.INVITE_FORM_CONTACT_INPUT,
