@@ -6,22 +6,26 @@ module.exports = async function (req, res, proceed) {
   const consultationId = req.body.consultation || req.params.consultation;
 
   if (user.role === sails.config.globals.ROLE_DOCTOR || user.role === sails.config.globals.ROLE_ADMIN) {
-    // doctors can respond to pending consultation
-    consultation = await Consultation.findOne({
-      or: [
-        { status: 'pending', id: consultationId },
-        { acceptedBy: user.id, id: consultationId }
-      ]
-    });
+    const consultationData = await Consultation.findOne({ id: consultationId }).populate('queue');
 
-    if (!consultation) {
-      const consultationData = await Consultation.findOne({ id: consultationId }).populate('queue');
-      if (consultationData && consultationData.queue && consultationData.queue.shareWhenOpened) {
-        const userHasQueueAccess = req.user.viewAllQueues ||
-          (req.user.allowedQueues && req.user.allowedQueues.some(q => q.id.toString() === consultationData.queue.id.toString()));
-        if (userHasQueueAccess) {
-          consultation = consultationData;
-        }
+    if (consultationData) {
+      const queueId = consultationData.queue && consultationData.queue.id ? consultationData.queue.id.toString() : null;
+      const userHasQueueAccess = !!queueId && (
+        req.user.viewAllQueues ||
+        (req.user.allowedQueues && req.user.allowedQueues.some(q => q.id.toString() === queueId))
+      );
+      const isPending = consultationData.status === 'pending' && !consultationData.acceptedBy;
+
+      // The doctor who accepted the consultation can always respond
+      const isAcceptedByUser = consultationData.acceptedBy === user.id;
+      // A pending consultation can be answered by the doctor it was assigned to,
+      // or by a member of its queue (same rule as reading messages in isConsultationOwner)
+      const canRespondToPending = isPending && (consultationData.doctor === user.id || userHasQueueAccess);
+      // Shared queues stay open to their members even once a colleague accepted the consultation
+      const canRespondInSharedQueue = !!consultationData.queue && consultationData.queue.shareWhenOpened && userHasQueueAccess;
+
+      if (isAcceptedByUser || canRespondToPending || canRespondInSharedQueue) {
+        consultation = consultationData;
       }
     }
   }
