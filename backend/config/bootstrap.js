@@ -141,4 +141,14 @@ module.exports.bootstrap = async function() {
     // every 5 min
   }, 300000);
 
+  // Started here rather than in a hook: bootstrap only runs once the ORM is
+  // loaded, so a tick can never fire against undefined models.
+  try {
+    sails.config.customLogger.log('verbose', 'Starting cron initialization', null, 'message', null);
+    await sails.config.startCron();
+    sails.config.customLogger.log('verbose', 'Cron initialized successfully', null, 'server-action', null);
+  } catch (error) {
+    sails.config.customLogger.log('error', 'Error initializing cron', error, 'server-action', null);
+  }
+
 };

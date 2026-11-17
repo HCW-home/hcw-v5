@@ -384,13 +384,28 @@ const inviteJobs = {
 module.exports = {
   startCron: async () => {
 
+    // A tick runs outside any request: an error thrown there is an unhandled
+    // rejection that would take the whole API (and every socket) down.
+    const safeTick = (name, tick) => async () => {
+      try {
+        await tick();
+      } catch (error) {
+        sails.config.customLogger.log('error', `Cron job '${name}' failed`, { error: error?.message || error }, 'server-action', null);
+      }
+    };
+
     const defineJob = (name, cronTime, jobFunction) => {
-      const job = new CronJob(cronTime, async () => {
+      const job = new CronJob(cronTime, safeTick(name, async () => {
         const jobs = await sails.models.publicinvite.findBy({ name });
         for (const jobItem of jobs) {
-          await jobFunction(jobItem);
+          // One failing item must not prevent the others from being processed
+          try {
+            await jobFunction(jobItem);
+          } catch (error) {
+            sails.config.customLogger.log('error', `Cron job '${name}' failed for item ${jobItem?.id}`, { error: error?.message || error }, 'server-action', null);
+          }
         }
-      }, null, true);
+      }), null, true);
       job.start();
       sails.config.customLogger.log('info', `Cron job '${name}' scheduled with cron time '${cronTime}'`, null, 'message', null);
       return job;
@@ -438,15 +453,15 @@ module.exports = {
       }
     };
 
-    const ringingTimeoutJob = new CronJob('*/5 * * * *', async () => {
+    const ringingTimeoutJob = new CronJob('*/5 * * * *', safeTick('RINGING_TIMEOUT', async () => {
       await endStaleCalls('ringing', RINGING_TIMEOUT, 'RINGING_TIMEOUT');
-    }, null, true);
+    }), null, true);
     ringingTimeoutJob.start();
     sails.config.customLogger.log('info', 'Cron job \'RINGING_TIMEOUT\' scheduled', null, 'message', null);
 
-    const durationTimeoutJob = new CronJob('*/5 * * * *', async () => {
+    const durationTimeoutJob = new CronJob('*/5 * * * *', safeTick('DURATION_TIMEOUT', async () => {
       await endStaleCalls('ongoing', CALL_DURATION_TIMEOUT, 'DURATION_TIMEOUT');
-    }, null, true);
+    }), null, true);
     durationTimeoutJob.start();
     sails.config.customLogger.log('info', 'Cron job \'DURATION_TIMEOUT\' scheduled', null, 'message', null);
 

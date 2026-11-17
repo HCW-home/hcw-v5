@@ -46,13 +46,7 @@ module.exports = function myBasicHook(sails) {
 
       await initializeClamscanWithRetry();
 
-      try {
-        sails.config.customLogger.log('verbose', 'Starting cron initialization', null, 'message', null);
-        await sails.config.startCron();
-        sails.config.customLogger.log('verbose', 'Cron initialized successfully', null, 'server-action', null);
-      } catch (error) {
-        sails.config.customLogger.log('error', 'Error initializing cron', error, 'server-action', null);
-      }
+      // Cron jobs are started from config/bootstrap.js, once the ORM is loaded.
 
       sails.config.customLogger.log('verbose', 'BasicHook initialization completed', null, 'server-action', null);
       return cb();

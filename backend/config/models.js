@@ -53,7 +53,9 @@ module.exports.models = {
   *                                                                          *
   ***************************************************************************/
 
-  migrate: 'alter',
+  // Never alter data at lift time: with an unrecognised NODE_ENV (e.g. "prod"),
+  // neither env file applies and this default is used in production.
+  migrate: 'safe',
 
 
   /***************************************************************************
