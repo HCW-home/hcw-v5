@@ -30,6 +30,10 @@ export class SocketEventsService {
   private consultationCanceledSubj: Subject<any> = new Subject()
   private endCallSubj: Subject<any> = new Subject()
   private consultationUpdatedSubj: Subject<any> = new Subject()
+  // Emitted once the user room is joined again after a reconnection: events
+  // broadcast while disconnected are lost, so views must refetch their data.
+  private resyncSubj: Subject<void> = new Subject()
+  private hasSubscribedOnce = false
   // Reset whenever a new socket instance is created.
   private listenersBound = false;
 
@@ -115,6 +119,10 @@ export class SocketEventsService {
         this.socketGet('/api/v1/subscribe-to-socket', {}, (resData, jwres) => {
           console.info('res data subscribe-to-socket', resData, jwres)
           this.initialized = true
+          if (this.hasSubscribedOnce) {
+            this.resyncSubj.next()
+          }
+          this.hasSubscribedOnce = true
         })
         this.socketGet('/api/v1/subscribe-to-doctors', {}, (resData, jwres) => {
           console.info('res data subscribe-to-doctors', resData, jwres)
@@ -228,6 +236,10 @@ export class SocketEventsService {
 
   onMessage(): Subject<any> {
     return this.messageSubj
+  }
+
+  onResync(): Subject<void> {
+    return this.resyncSubj
   }
 
   onOnlineStatusChange(): Subject<any> {

@@ -131,6 +131,9 @@ export class ConsultationPage implements OnInit,  AfterViewInit {
             })
         );
         this.subscriptions.push(
+            this._socketEventsService.onResync().subscribe(() => this.resyncMessages())
+        );
+        this.subscriptions.push(
             this._socketEventsService.onConsultationAccepted().subscribe((event) => {
                 if (event.data._id === this.consultationId || event.data.consultation?.id === this.consultationId) {
                     this.zone.run(() => {
@@ -575,6 +578,33 @@ export class ConsultationPage implements OnInit,  AfterViewInit {
                         this.scrollToBottom(100);
                     }
                 });
+            });
+    }
+
+    // Fetch the latest messages after a socket reconnection and add the ones
+    // broadcast while the socket was down. Own messages are skipped: they are
+    // already displayed optimistically when sent (without an id to match on).
+    resyncMessages() {
+        if (!this.consultation || this.currentUser?.role === "translator") {
+            return;
+        }
+        this.msgServ
+            .getConsultationMessages(this.consultation._id || this.consultation.id, 0)
+            .pipe(first())
+            .subscribe((msgs) => {
+                const missing = msgs.filter(
+                    (m) => m.from !== this.currentUser.id && !this.chatMessages.some((c) => c.id && c.id === m.id)
+                );
+                if (!missing.length) {
+                    return;
+                }
+                this.zone.run(() => {
+                    this.chatMessages = this.chatMessages
+                        .concat(missing.map((m) => this.adjustMsg(m)))
+                        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                });
+                this.scrollToBottom();
+                this.readMessages();
             });
     }
 

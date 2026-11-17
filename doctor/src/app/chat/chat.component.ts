@@ -109,6 +109,10 @@ export class ChatComponent implements OnInit, OnDestroy {
       });
     });
 
+    this.subscriptions.push(
+      this.socketEventsService.onResync().subscribe(() => this.resyncMessages())
+    );
+
     this.socketEventsService.onOwnershipTransferred().subscribe(event => {
       if (
         event.data &&
@@ -315,6 +319,38 @@ export class ChatComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.loadingMsgs = false;
+        },
+      });
+  }
+
+  // Fetch the latest messages after a socket reconnection and add the ones
+  // broadcast while the socket was down. Own messages are skipped: they are
+  // already displayed optimistically when sent (without an id to match on).
+  resyncMessages() {
+    if (!this.consultation) {
+      return;
+    }
+    this.msgServ
+      .getConsultationMessages(this.consultation._id || this.consultation.id, 0, false)
+      .subscribe({
+        next: messages => {
+          const missing = messages.filter(
+            m =>
+              m.from !== this.currentUser.id &&
+              !this.chatMessages.some(c => c.id && c.id === m.id)
+          );
+          if (!missing.length) {
+            return;
+          }
+          this.zone.run(() => {
+            this.chatMessages = this.chatMessages
+              .concat(missing.map(m => this.adjustMsg(m)))
+              .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            this.scrollToBottom();
+          });
+          if (this.showInput) {
+            this.readMessages();
+          }
         },
       });
   }
