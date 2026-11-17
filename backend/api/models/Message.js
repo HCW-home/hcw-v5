@@ -177,9 +177,14 @@ module.exports = {
       // data.invite while these calls pass { message, consultation }.
     }
 
-    const publicInvite = await PublicInvite.findOne({
+    // Offline notifications are best effort: a failure here must never reject afterCreate,
+    // since an unhandled rejection takes the whole API (and every socket) down.
+    try {
+    // The invite may be missing (deleted or never created); every use below must tolerate null.
+    // Sensitive fields are stored encrypted, so decrypt before reading the email address.
+    const publicInvite = PublicInvite.decryptForUse(await PublicInvite.findOne({
       inviteToken: consultation.invitationToken,
-    });
+    }));
 
     if (consultation) {
       const url = `${process.env.PUBLIC_URL}/inv/?invite=${consultation.invitationToken}`;
@@ -197,7 +202,7 @@ module.exports = {
           }).set({ status: 'SENT' });
         }
 
-        const locale = publicInvite.patientLanguage || sails.config.globals.DEFAULT_PATIENT_LOCALE;
+        const locale = publicInvite?.patientLanguage || sails.config.globals.DEFAULT_PATIENT_LOCALE;
 
         if (
           toUser &&
@@ -214,7 +219,7 @@ module.exports = {
           await Consultation.updateOne({ id: consultation.id }).set({
             flagPatientNotified: true,
           });
-        } else if (publicInvite.emailAddress) {
+        } else if (publicInvite?.emailAddress) {
           sails.config.customLogger.log('info', `Sending email notification to patient ${publicInvite.emailAddress}`, null, 'server-action');
           await sails.helpers.email.with({
             to: publicInvite.emailAddress,
@@ -301,6 +306,9 @@ module.exports = {
           });
         }
       }
+    }
+    } catch (error) {
+      sails.config.customLogger.log('error', `Message afterCreate: offline notification failed for consultation ${message.consultation}`, { error: error?.message || error }, 'server-action');
     }
 
     return proceed();
