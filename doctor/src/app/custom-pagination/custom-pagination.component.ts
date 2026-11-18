@@ -8,9 +8,9 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 export class CustomPaginationComponent {
   @Input() totalItems = 0;
   @Input() itemsPerPage = 10;
+  // Can be bound by the parent to reset or clamp the page (e.g. after a search)
+  @Input() currentPage = 1;
   @Output() pageChange = new EventEmitter<number>();
-
-  currentPage = 1;
 
   get totalPages() {
     return Math.ceil(this.totalItems / this.itemsPerPage);

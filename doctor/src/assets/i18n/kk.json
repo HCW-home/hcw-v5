@@ -138,6 +138,9 @@
         "close": "Жабу"
     },
     "consultations": {
+        "searchPlaceholder": "Пациентті, өтініш берушіні, кезекті іздеу…",
+        "clearSearch": "Іздеуді тазалау",
+        "noSearchResult": "Іздеуге сәйкес консультация жоқ",
         "noPatientName": "Анықталмаған",
         "noConsultation": "Консультация жоқ",
         "patient": "Науқас",

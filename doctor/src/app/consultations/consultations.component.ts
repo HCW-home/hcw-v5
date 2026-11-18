@@ -40,11 +40,14 @@ export class ConsultationsComponent implements OnInit, OnDestroy {
   @ViewChild('filterButton') filterButton;
   appLiedFiltersCount = 0;
   filterState = null;
+  searchTerm = '';
   queues = [];
   queue = null;
   consultations = [];
   allConsultations = [];
-  page = 0;
+  pagedConsultations = [];
+  readonly itemsPerPage = 10;
+  page = 1;
   status;
   overviewSub;
   unreadActiveCountSub;
@@ -138,16 +141,17 @@ export class ConsultationsComponent implements OnInit, OnDestroy {
     });
   }
 
-  applyFilters(filters: {
-    queues: any[];
-    createdBy: { me: boolean; notMe: boolean };
-    handledBy: { me: boolean; notMe: boolean };
-  }) {
+  applyFilters(
+    consultations: any[],
+    filters: {
+      queues: any[];
+      createdBy: { me: boolean; notMe: boolean };
+      handledBy: { me: boolean; notMe: boolean };
+    }
+  ) {
     const selectedQueueIds = filters.queues
       .filter(queue => queue.selected)
       .map(queue => queue.id);
-
-    const consultations = [...this.allConsultations];
 
     // Apply queue filter
     let filteredConsultations =
@@ -189,7 +193,90 @@ export class ConsultationsComponent implements OnInit, OnDestroy {
       (filters.handledBy.me ? 1 : 0) +
       (filters.handledBy.notMe ? 1 : 0);
 
-    this.consultations = filteredConsultations;
+    return filteredConsultations;
+  }
+
+  onSearchChange(term: string) {
+    this.searchTerm = term || '';
+    this.page = 1;
+    this.refreshList();
+  }
+
+  onPageChange(page: number) {
+    this.page = page;
+    this.updatePage();
+  }
+
+  // Slice the filtered list for the current page, clamping it if the list shrank
+  private updatePage() {
+    const totalPages = Math.max(
+      1,
+      Math.ceil(this.consultations.length / this.itemsPerPage)
+    );
+    if (this.page > totalPages) {
+      this.page = totalPages;
+    }
+    const start = (this.page - 1) * this.itemsPerPage;
+    this.pagedConsultations = this.consultations.slice(
+      start,
+      start + this.itemsPerPage
+    );
+  }
+
+  clearSearch() {
+    this.onSearchChange('');
+  }
+
+  // Lowercase and strip accents so that "Eleve" matches "Élève"
+  private normalize(value: any): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  }
+
+  private getSearchableText(cons: any): string {
+    const c = cons.consultation || {};
+    const values = [
+      c.firstName !== 'No firstname' ? c.firstName : '',
+      c.lastName !== 'No lastname' ? c.lastName : '',
+      cons.nurse?.firstName,
+      cons.nurse?.lastName,
+      cons.queue?.name,
+      cons.acceptedByUser?.firstName,
+      cons.acceptedByUser?.lastName,
+      cons.closedByUser?.firstName,
+      cons.closedByUser?.lastName,
+      cons.guest?.email,
+      cons.guest?.phoneNumber,
+      cons.guestInvite?.emailAddress,
+      cons.guestInvite?.phoneNumber,
+      cons.lastMsg?.text,
+      ...(c.metadata ? Object.values(c.metadata) : []),
+    ];
+    return this.normalize(values.filter(v => v).join(' '));
+  }
+
+  private applySearch(consultations: any[]) {
+    const terms = this.normalize(this.searchTerm).split(/\s+/).filter(t => t);
+    if (!terms.length) {
+      return consultations;
+    }
+    // Every word of the query must match somewhere in the consultation
+    return consultations.filter(cons => {
+      const text = this.getSearchableText(cons);
+      return terms.every(term => text.includes(term));
+    });
+  }
+
+  // Recompute the displayed list from the full list, filters and search term
+  refreshList() {
+    let consultations = [...this.allConsultations];
+    if (this.filterState) {
+      consultations = this.applyFilters(consultations, this.filterState);
+    }
+    this.consultations = this.applySearch(consultations);
+    this.updatePage();
   }
 
   async openDialog(event, pastConsultation) {
@@ -265,15 +352,16 @@ export class ConsultationsComponent implements OnInit, OnDestroy {
       .getConsultationsOverview()
       .subscribe(consultations => {
         this.zone.run(() => {
-          this.consultations = consultations.filter(
+          this.allConsultations = consultations.filter(
             c => c.consultation.status === this.status
           );
-          this.allConsultations = this.consultations;
           if (this.status === 'closed') {
-            this.consultations = this.consultations.sort((a, b) => {
+            this.allConsultations.sort((a, b) => {
               return b.consultation.closedAt - a.consultation.closedAt;
             });
           }
+          // Keep filters and search applied when the overview is refreshed
+          this.refreshList();
         });
       });
   }
@@ -350,11 +438,13 @@ export class ConsultationsComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().subscribe(result => {
       if (result?.queues) {
         this.filterState = result;
-        this.applyFilters(result);
+        this.page = 1;
+        this.refreshList();
       } else if (result === 'clear') {
         this.filterState = null;
         this.appLiedFiltersCount = 0;
-        this.consultations = [...this.allConsultations];
+        this.page = 1;
+        this.refreshList();
       }
     });
   }

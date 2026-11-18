@@ -26,6 +26,29 @@
 
     <div>
       <div class="filters-wrapper">
+        <mat-form-field
+          class="search-field"
+          appearance="outline"
+          subscriptSizing="dynamic">
+          <mat-icon matPrefix fontIcon="search"></mat-icon>
+          <input
+            matInput
+            type="search"
+            autocomplete="off"
+            [placeholder]="'consultations.searchPlaceholder' | translate"
+            [ngModel]="searchTerm"
+            (ngModelChange)="onSearchChange($event)" />
+          @if (searchTerm) {
+            <button
+              matSuffix
+              mat-icon-button
+              type="button"
+              [attr.aria-label]="'consultations.clearSearch' | translate"
+              (click)="clearSearch()">
+              <mat-icon fontIcon="close"></mat-icon>
+            </button>
+          }
+        </mat-form-field>
         <button
           mat-raised-button
           #filterButton
@@ -43,7 +66,7 @@
         <tr
           (click)="showChat(consultation._id)"
           *ngFor="
-            let consultation of consultations;
+            let consultation of pagedConsultations;
             let i = index;
             trackBy: trackItem
           ">
@@ -290,7 +313,11 @@
         <tr class="empty-row" *ngIf="!consultations.length">
           <td rowspan="8">
             <h4>
-              {{ 'consultations.noConsultation' | translate }}
+              @if (searchTerm && allConsultations.length) {
+                {{ 'consultations.noSearchResult' | translate }}
+              } @else {
+                {{ 'consultations.noConsultation' | translate }}
+              }
             </h4>
           </td>
         </tr>
@@ -298,8 +325,9 @@
 
       <app-custom-pagination
         [totalItems]="consultations.length"
-        [itemsPerPage]="10"
-        (pageChange)="page = $event"></app-custom-pagination>
+        [itemsPerPage]="itemsPerPage"
+        [currentPage]="page"
+        (pageChange)="onPageChange($event)"></app-custom-pagination>
     </div>
   </div>
 </ng-container>

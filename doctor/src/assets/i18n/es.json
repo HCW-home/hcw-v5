@@ -444,6 +444,9 @@
         "cancel": "Cancelar"
     },
     "consultations": {
+        "searchPlaceholder": "Buscar paciente, solicitante, cola…",
+        "clearSearch": "Borrar búsqueda",
+        "noSearchResult": "Ninguna consulta coincide con su búsqueda",
         "noPatientName": "Indefinido/a",
         "noConsultation": "Sin consulta",
         "patient": "Paciente",

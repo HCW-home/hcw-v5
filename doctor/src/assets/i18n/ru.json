@@ -93,6 +93,9 @@
     "close": "Закрыть"
   },
   "consultations": {
+    "searchPlaceholder": "Поиск пациента, заявителя, очереди…",
+    "clearSearch": "Очистить поиск",
+    "noSearchResult": "Нет консультаций, соответствующих запросу",
     "noPatientName": "Не определено",
     "noConsultation": "Нет консультаций",
     "patient": "Пациент",
