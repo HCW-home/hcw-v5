@@ -77,7 +77,7 @@
         "close": "Закрити"
     },
     "consultations": {
-        "searchPlaceholder": "Пошук пацієнта, заявника, черги…",
+        "searchPlaceholder": "Пошук…",
         "clearSearch": "Очистити пошук",
         "noSearchResult": "Немає консультацій, що відповідають запиту",
         "noPatientName": "Не визначено",

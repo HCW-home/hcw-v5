@@ -93,7 +93,7 @@
     "close": "Close"
   },
   "consultations": {
-    "searchPlaceholder": "Search patient, requester, queue…",
+    "searchPlaceholder": "Search…",
     "clearSearch": "Clear search",
     "noSearchResult": "No consultation matches your search",
     "noPatientName": "Undefined",

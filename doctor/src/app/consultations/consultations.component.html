@@ -26,29 +26,25 @@
 
     <div>
       <div class="filters-wrapper">
-        <mat-form-field
-          class="search-field"
-          appearance="outline"
-          subscriptSizing="dynamic">
-          <mat-icon matPrefix fontIcon="search"></mat-icon>
+        <div class="search-field">
+          <mat-icon class="search-icon" fontIcon="search"></mat-icon>
           <input
-            matInput
             type="search"
             autocomplete="off"
             [placeholder]="'consultations.searchPlaceholder' | translate"
+            [attr.aria-label]="'consultations.searchPlaceholder' | translate"
             [ngModel]="searchTerm"
             (ngModelChange)="onSearchChange($event)" />
           @if (searchTerm) {
             <button
-              matSuffix
-              mat-icon-button
               type="button"
+              class="clear-button"
               [attr.aria-label]="'consultations.clearSearch' | translate"
               (click)="clearSearch()">
               <mat-icon fontIcon="close"></mat-icon>
             </button>
           }
-        </mat-form-field>
+        </div>
         <button
           mat-raised-button
           #filterButton

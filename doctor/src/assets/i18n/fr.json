@@ -75,7 +75,7 @@
         "close": "Fermer"
     },
     "consultations": {
-        "searchPlaceholder": "Rechercher un patient, demandeur, file…",
+        "searchPlaceholder": "Rechercher…",
         "clearSearch": "Effacer la recherche",
         "noSearchResult": "Aucune consultation ne correspond à votre recherche",
         "filters": "Filtres",
